@@ -30,6 +30,41 @@ E2B 平台创建沙箱 ← ← ← ← 调用 E2B API
 
 ## 🚀 快速开始
 
+### ⭐ 🎬 访问 Remotion Studio 实时预览（推荐）
+
+**一键启动，20 秒访问完整的 Remotion Studio UI！**
+
+```bash
+# 一条命令启动
+python3 final_studio_launcher.py
+```
+
+这会自动：
+- ✅ 创建 E2B Sandbox
+- ✅ 启动 Remotion Studio
+- ✅ 生成公网访问 URL（格式：`https://3000-{sandbox_id}.e2b.app`）
+- ✅ 在浏览器中自动打开
+
+**功能：**
+- 🎨 实时预览所有场景
+- 🎬 选择和切换场景
+- 🔧 调整参数并实时查看效果
+- 🐛 使用浏览器开发者工具调试
+
+**示例输出：**
+```
+✅ Sandbox 创建成功: ieinbicy0cs59y022pax3
+✅ Remotion Studio 正在运行！
+📍 访问地址: https://3000-ieinbicy0cs59y022pax3.e2b.app
+```
+
+**详细文档：**
+- 📖 [QUICK_START.md](./QUICK_START.md) - 快速开始指南
+- 📊 [FINAL_SUMMARY.md](./FINAL_SUMMARY.md) - 完整测试总结
+- 🔧 [TEST_RESULT.md](./TEST_RESULT.md) - 测试结果详情
+
+---
+
 ### 作为 E2B 模板使用
 
 #### 1. 配置 API Key
