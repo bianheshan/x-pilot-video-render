@@ -1,0 +1,63 @@
+{
+  "version": "1.0.0",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "scenes": [
+    {
+      "id": "scene-1",
+      "name": "标题介绍",
+      "durationInFrames": 90,
+      "component": "scene-1.tsx"
+    },
+    {
+      "id": "scene-2",
+      "name": "DNA 组成",
+      "durationInFrames": 150,
+      "component": "scene-2.tsx"
+    },
+    {
+      "id": "scene-3",
+      "name": "碱基配对",
+      "durationInFrames": 120,
+      "component": "scene-3.tsx"
+    },
+    {
+      "id": "scene-4",
+      "name": "代码演示",
+      "durationInFrames": 180,
+      "component": "scene-4.tsx"
+    },
+    {
+      "id": "scene-5",
+      "name": "双螺旋结构",
+      "durationInFrames": 150,
+      "component": "scene-5.tsx"
+    },
+    {
+      "id": "scene-6",
+      "name": "DNA 复制",
+      "durationInFrames": 150,
+      "component": "scene-6.tsx"
+    },
+    {
+      "id": "scene-7",
+      "name": "应用场景",
+      "durationInFrames": 120,
+      "component": "scene-7.tsx"
+    },
+    {
+      "id": "scene-8",
+      "name": "结束",
+      "durationInFrames": 90,
+      "component": "scene-8.tsx"
+    },
+    {
+      "id": "scene_1_intro",
+      "name": "引入主题，建立从文本到数学的认知框架 (Know: 模型本质是数学)",
+      "durationInFrames": 90,
+      "component": "scene_1_intro.tsx"
+    }
+  ],
+  "theme": "tech"
+}

@@ -1,0 +1,22 @@
+{
+  "scenes": [
+    {
+      "id": "scene-1",
+      "name": "DNA Introduction",
+      "duration": 90,
+      "filename": "Scene1_DNAIntro.tsx",
+      "content": "import React from 'react';\nimport { AbsoluteFill } from 'remotion';\nimport { TitleCard } from '../components';\n\nexport const Scene1_DNAIntro: React.FC = () => {\n  return (\n    <AbsoluteFill>\n      <TitleCard title=\"DNA 双链结构\" subtitle=\"生物学基础\" />\n    </AbsoluteFill>\n  );\n};\n\nexport default Scene1_DNAIntro;",
+      "props": {
+        "title": "DNA Introduction"
+      }
+    },
+    {
+      "id": "scene-2",
+      "name": "DNA Structure",
+      "duration": 120,
+      "filename": "Scene2_DNAStructure.tsx",
+      "content": "import React from 'react';\nimport { AbsoluteFill } from 'remotion';\nimport { Subtitle, AISpeaker, FullScreen } from '../components';\n\nexport const Scene2_DNAStructure: React.FC = () => {\n  return (\n    <FullScreen backgroundColor=\"#1e293b\">\n      <AISpeaker name=\"AI 老师\" position=\"right\" speaking={true} />\n      <div style={{ padding: 100, color: 'white' }}>\n        <h2 style={{ fontSize: 64, marginBottom: 40 }}>双螺旋结构</h2>\n        <p style={{ fontSize: 36, lineHeight: 1.8 }}>\n          DNA 由两条反向平行的核苷酸链组成，\n          通过氢键连接形成稳定的双螺旋结构。\n        </p>\n      </div>\n      <Subtitle text=\"双螺旋：生命的密码\" position=\"bottom\" />\n    </FullScreen>\n  );\n};\n\nexport default Scene2_DNAStructure;",
+      "props": {}
+    }
+  ]
+}

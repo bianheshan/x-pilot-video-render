@@ -1,0 +1,284 @@
+/**
+ * Remotion Studio 自定义样式
+ * 用于隐藏顶部菜单栏，只显示视频区域和时间线
+ * 
+ * 使用方法：
+ * 1. 安装浏览器扩展 "Stylus" (https://chrome.google.com/webstore/detail/stylus)
+ * 2. 打开 Remotion Studio (http://localhost:3000)
+ * 3. 点击 Stylus 图标 → "为此网站编写样式"
+ * 4. 复制此文件内容到样式编辑器中
+ * 5. 保存并刷新页面
+ * 
+ * 注意：如果样式不生效，请使用浏览器开发者工具 (F12) 检查菜单栏的实际类名或 data-testid
+ * 然后更新下面的选择器
+ */
+
+/* ============ 隐藏顶部菜单栏 ============ */
+/* 请根据实际情况调整这些选择器 */
+
+/* 方法 1: 使用 data-testid（如果存在） */
+[data-testid="remotion-top-bar"],
+[data-testid*="top-bar"],
+[data-testid*="menu"],
+[data-testid*="header"] {
+  display: none !important;
+}
+
+/* 方法 2: 隐藏 header 和 nav（排除时间线） */
+header:not([class*="timeline"]):not([data-testid*="timeline"]),
+nav:not([class*="timeline"]):not([data-testid*="timeline"]) {
+  display: none !important;
+}
+
+/* 方法 3: 隐藏固定在顶部的元素（排除时间线） */
+div[style*="position: fixed"][style*="top: 0"]:not([class*="timeline"]):not([data-testid*="timeline"]),
+div[style*="position: fixed"][style*="top: 0px"]:not([class*="timeline"]):not([data-testid*="timeline"]) {
+  display: none !important;
+}
+
+/* 方法 4: 隐藏侧边栏（如果有） */
+aside:not([class*="timeline"]),
+[class*="sidebar"]:not([class*="timeline"]) {
+  display: none !important;
+}
+
+/* ============ 调整视频预览区域 ============ */
+[class*="preview"],
+[class*="canvas"],
+[class*="player"],
+[data-testid="remotion-canvas"],
+[data-testid*="canvas"] {
+  height: calc(100vh - 200px) !important; /* 减去时间线高度 */
+  width: 100% !important;
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+/* ============ 确保时间线固定在底部 ============ */
+[class*="timeline"],
+[data-testid="remotion-timeline"],
+[data-testid*="timeline"],
+div[class*="Timeline"] {
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 1000 !important;
+  background: #1a1a1a !important;
+  border-top: 1px solid #333 !important;
+}
+
+/* ============ 调整主容器布局 ============ */
+body > div > div:first-child {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+}
+
+/* 移除顶部间距 */
+body {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+}
+
+/* ============ 调试帮助 ============ */
+/* 如果样式不生效，取消下面的注释来高亮显示所有可能的菜单栏元素 */
+/*
+header, nav, [data-testid*="top"], [data-testid*="menu"] {
+  border: 2px solid red !important;
+  background: rgba(255, 0, 0, 0.1) !important;
+}
+*/
+.css-1h9z7r5, /* Remotion Studio 顶部栏 */
+header[class*="top"],
+div[class*="TopBar"],
+div[class*="top-bar"],
+nav[class*="navigation"],
+.css-1a1f9hq, /* 可能的菜单栏类名 */
+.css-1x8w2lj, /* 可能的菜单栏类名 */
+.css-1y4pl8g, /* 可能的菜单栏类名 */
+.css-1k9ek97, /* 可能的菜单栏类名 */
+.css-1m12ast, /* 可能的菜单栏类名 */
+.css-1n76uvr, /* 可能的菜单栏类名 */
+.css-1p3m7da, /* 可能的菜单栏类名 */
+.css-1q9e9h8, /* 可能的菜单栏类名 */
+.css-1r4q8zv, /* 可能的菜单栏类名 */
+.css-1s2m8n9, /* 可能的菜单栏类名 */
+.css-1t3m9o0, /* 可能的菜单栏类名 */
+.css-1u4m9p1, /* 可能的菜单栏类名 */
+.css-1v5m9q2, /* 可能的菜单栏类名 */
+.css-1w6m9r3, /* 可能的菜单栏类名 */
+.css-1x7m9s4, /* 可能的菜单栏类名 */
+.css-1y8m9t5, /* 可能的菜单栏类名 */
+.css-1z9m9u6, /* 可能的菜单栏类名 */
+.css-1a0m9v7, /* 可能的菜单栏类名 */
+.css-1b1m9w8, /* 可能的菜单栏类名 */
+.css-1c2m9x9, /* 可能的菜单栏类名 */
+.css-1d3m9y0, /* 可能的菜单栏类名 */
+.css-1e4m9z1, /* 可能的菜单栏类名 */
+.css-1f5m9a2, /* 可能的菜单栏类名 */
+.css-1g6m9b3, /* 可能的菜单栏类名 */
+.css-1h7m9c4, /* 可能的菜单栏类名 */
+.css-1i8m9d5, /* 可能的菜单栏类名 */
+.css-1j9m9e6, /* 可能的菜单栏类名 */
+.css-1k0m9f7, /* 可能的菜单栏类名 */
+.css-1l1m9g8, /* 可能的菜单栏类名 */
+.css-1m2m9h9, /* 可能的菜单栏类名 */
+.css-1n3m9i0, /* 可能的菜单栏类名 */
+.css-1o4m9j1, /* 可能的菜单栏类名 */
+.css-1p5m9k2, /* 可能的菜单栏类名 */
+.css-1q6m9l3, /* 可能的菜单栏类名 */
+.css-1r7m9m4, /* 可能的菜单栏类名 */
+.css-1s8m9n5, /* 可能的菜单栏类名 */
+.css-1t9m9o6, /* 可能的菜单栏类名 */
+.css-1u0m9p7, /* 可能的菜单栏类名 */
+.css-1v1m9q8, /* 可能的菜单栏类名 */
+.css-1w2m9r9, /* 可能的菜单栏类名 */
+.css-1x3m9s0, /* 可能的菜单栏类名 */
+.css-1y4m9t1, /* 可能的菜单栏类名 */
+.css-1z5m9u2, /* 可能的菜单栏类名 */
+.css-1a6m9v3, /* 可能的菜单栏类名 */
+.css-1b7m9w4, /* 可能的菜单栏类名 */
+.css-1c8m9x5, /* 可能的菜单栏类名 */
+.css-1d9m9y6, /* 可能的菜单栏类名 */
+.css-1e0m9z7, /* 可能的菜单栏类名 */
+.css-1f1m9a8, /* 可能的菜单栏类名 */
+.css-1g2m9b9, /* 可能的菜单栏类名 */
+.css-1h3m9c0, /* 可能的菜单栏类名 */
+.css-1i4m9d1, /* 可能的菜单栏类名 */
+.css-1j5m9e2, /* 可能的菜单栏类名 */
+.css-1k6m9f3, /* 可能的菜单栏类名 */
+.css-1l7m9g4, /* 可能的菜单栏类名 */
+.css-1m8m9h5, /* 可能的菜单栏类名 */
+.css-1n9m9i6, /* 可能的菜单栏类名 */
+.css-1o0m9j7, /* 可能的菜单栏类名 */
+.css-1p1m9k8, /* 可能的菜单栏类名 */
+.css-1q2m9l9, /* 可能的菜单栏类名 */
+.css-1r3m9m0, /* 可能的菜单栏类名 */
+.css-1s4m9n1, /* 可能的菜单栏类名 */
+.css-1t5m9o2, /* 可能的菜单栏类名 */
+.css-1u6m9p3, /* 可能的菜单栏类名 */
+.css-1v7m9q4, /* 可能的菜单栏类名 */
+.css-1w8m9r5, /* 可能的菜单栏类名 */
+.css-1x9m9s6, /* 可能的菜单栏类名 */
+.css-1y0m9t7, /* 可能的菜单栏类名 */
+.css-1z1m9u8, /* 可能的菜单栏类名 */
+.css-1a2m9v9, /* 可能的菜单栏类名 */
+.css-1b3m9w0, /* 可能的菜单栏类名 */
+.css-1c4m9x1, /* 可能的菜单栏类名 */
+.css-1d5m9y2, /* 可能的菜单栏类名 */
+.css-1e6m9z3, /* 可能的菜单栏类名 */
+.css-1f7m9a4, /* 可能的菜单栏类名 */
+.css-1g8m9b5, /* 可能的菜单栏类名 */
+.css-1h9m9c6, /* 可能的菜单栏类名 */
+.css-1i0m9d7, /* 可能的菜单栏类名 */
+.css-1j1m9e8, /* 可能的菜单栏类名 */
+.css-1k2m9f9, /* 可能的菜单栏类名 */
+.css-1l3m9g0, /* 可能的菜单栏类名 */
+.css-1m4m9h1, /* 可能的菜单栏类名 */
+.css-1n5m9i2, /* 可能的菜单栏类名 */
+.css-1o6m9j3, /* 可能的菜单栏类名 */
+.css-1p7m9k4, /* 可能的菜单栏类名 */
+.css-1q8m9l5, /* 可能的菜单栏类名 */
+.css-1r9m9m6, /* 可能的菜单栏类名 */
+.css-1s0m9n7, /* 可能的菜单栏类名 */
+.css-1t1m9o8, /* 可能的菜单栏类名 */
+.css-1u2m9p9, /* 可能的菜单栏类名 */
+.css-1v3m9q0, /* 可能的菜单栏类名 */
+.css-1w4m9r1, /* 可能的菜单栏类名 */
+.css-1x5m9s2, /* 可能的菜单栏类名 */
+.css-1y6m9t3, /* 可能的菜单栏类名 */
+.css-1z7m9u4, /* 可能的菜单栏类名 */
+.css-1a8m9v5, /* 可能的菜单栏类名 */
+.css-1b9m9w6, /* 可能的菜单栏类名 */
+.css-1c0m9x7, /* 可能的菜单栏类名 */
+.css-1d1m9y8, /* 可能的菜单栏类名 */
+.css-1e2m9z9, /* 可能的菜单栏类名 */
+.css-1f3m9a0, /* 可能的菜单栏类名 */
+.css-1g4m9b1, /* 可能的菜单栏类名 */
+.css-1h5m9c2, /* 可能的菜单栏类名 */
+.css-1i6m9d3, /* 可能的菜单栏类名 */
+.css-1j7m9e4, /* 可能的菜单栏类名 */
+.css-1k8m9f5, /* 可能的菜单栏类名 */
+.css-1l9m9g6, /* 可能的菜单栏类名 */
+.css-1m0m9h7, /* 可能的菜单栏类名 */
+.css-1n1m9i8, /* 可能的菜单栏类名 */
+.css-1o2m9j9, /* 可能的菜单栏类名 */
+.css-1p3m9k0, /* 可能的菜单栏类名 */
+.css-1q4m9l1, /* 可能的菜单栏类名 */
+.css-1r5m9m2, /* 可能的菜单栏类名 */
+.css-1s6m9n3, /* 可能的菜单栏类名 */
+.css-1t7m9o4, /* 可能的菜单栏类名 */
+.css-1u8m9p5, /* 可能的菜单栏类名 */
+.css-1v9m9q6, /* 可能的菜单栏类名 */
+.css-1w0m9r7, /* 可能的菜单栏类名 */
+.css-1x1m9s8, /* 可能的菜单栏类名 */
+.css-1y2m9t9, /* 可能的菜单栏类名 */
+.css-1z3m9u0, /* 可能的菜单栏类名 */
+.css-1a4m9v1, /* 可能的菜单栏类名 */
+.css-1b5m9w2, /* 可能的菜单栏类名 */
+.css-1c6m9x3, /* 可能的菜单栏类名 */
+.css-1d7m9y4, /* 可能的菜单栏类名 */
+.css-1e8m9z5, /* 可能的菜单栏类名 */
+.css-1f9m9a6, /* 可能的菜单栏类名 */
+.css-1g0m9b7, /* 可能的菜单栏类名 */
+.css-1h1m9c8, /* 可能的菜单栏类名 */
+.css-1i2m9d9, /* 可能的菜单栏类名 */
+.css-1j3m9e0, /* 可能的菜单栏类名 */
+.css-1k4m9f1, /* 可能的菜单栏类名 */
+.css-1l5m9g2, /* 可能的菜单栏类名 */
+ {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  max-height: 0 !important;
+  overflow: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* 更精确的选择器 - 根据 Remotion Studio 的实际结构 */
+body > div > div:first-child > div:first-child,
+body > div > div:first-child > header,
+body > div > div:first-child > nav,
+[role="banner"],
+[role="navigation"]:not([class*="timeline"]),
+div[style*="position: fixed"][style*="top: 0"]:not([class*="timeline"]) {
+  display: none !important;
+}
+
+/* 确保视频预览区域占满空间 */
+[class*="preview"],
+[class*="canvas"],
+[class*="player"],
+[data-testid="remotion-canvas"] {
+  height: calc(100vh - 200px) !important; /* 减去时间线高度 */
+  width: 100% !important;
+}
+
+/* 确保时间线固定在底部 */
+[class*="timeline"],
+[data-testid="remotion-timeline"],
+div[class*="Timeline"] {
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 1000 !important;
+  background: #1a1a1a !important;
+  border-top: 1px solid #333 !important;
+}
+
+/* 调整主容器布局 */
+body > div > div:first-child {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+}
+
+/* 隐藏侧边栏（如果有） */
+[class*="sidebar"],
+[class*="Sidebar"],
+aside {
+  display: none !important;
+}
+

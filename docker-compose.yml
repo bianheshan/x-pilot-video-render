@@ -1,0 +1,28 @@
+# Docker Compose 配置 - 用于本地测试
+# 在 E2B 中可能不需要，但有助于本地开发
+
+version: '3.8'
+
+services:
+  remotion:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: x-pilot-remotion
+    ports:
+      - "3000:3000"  # Remotion Studio
+      - "5000:5000"  # Web Uploader
+    volumes:
+      # 挂载输出目录（可选）
+      - ./output:/app/output
+      # 挂载场景目录（可选，用于热重载）
+      - ./src/scenes:/app/src/scenes
+    environment:
+      - NODE_ENV=production
+      - PYTHONUNBUFFERED=1
+    # 使用启动脚本同时启动所有服务
+    # command: ["/app/start-all.sh"]
+    # 或单独启动 Remotion Studio
+    command: ["npm", "run", "dev"]
+    restart: unless-stopped
+
