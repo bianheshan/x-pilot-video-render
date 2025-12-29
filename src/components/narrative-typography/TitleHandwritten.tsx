@@ -139,9 +139,6 @@ export const TitleHandwritten: React.FC<TitleHandwrittenProps> = ({
           strokeDasharray="2000"
           strokeDashoffset={2000 - (writingProgress / 100) * 2000}
           filter="url(#ink-diffusion)"
-          style={{
-            transition: "stroke-dashoffset 0.1s linear",
-          }}
         >
           {text}
         </text>
@@ -175,33 +172,19 @@ export const TitleHandwritten: React.FC<TitleHandwrittenProps> = ({
             <circle
               cx={`${penX}%`}
               cy="50%"
-              r="6"
+              r={6 + 2 * (0.5 + 0.5 * Math.sin(frame * 0.35))}
               fill={textColor}
               opacity="0.8"
-            >
-              <animate
-                attributeName="r"
-                values="6;8;6"
-                dur="0.5s"
-                repeatCount="indefinite"
-              />
-            </circle>
+            />
 
             {/* 笔尖光晕 */}
             <circle
               cx={`${penX}%`}
               cy="50%"
-              r="12"
+              r={12 + 4 * (0.5 + 0.5 * Math.sin(frame * 0.35))}
               fill={color}
               opacity="0.2"
-            >
-              <animate
-                attributeName="r"
-                values="12;16;12"
-                dur="0.5s"
-                repeatCount="indefinite"
-              />
-            </circle>
+            />
           </g>
         )}
       </svg>

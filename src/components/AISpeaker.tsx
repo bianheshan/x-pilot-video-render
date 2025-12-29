@@ -58,7 +58,6 @@ export const AISpeaker: React.FC<AISpeakerProps> = ({
           border: "4px solid #3b82f6",
           boxShadow: `0 0 ${30 * scale}px rgba(59, 130, 246, ${glowOpacity})`,
           transform: `scale(${scale})`,
-          transition: "transform 0.3s ease",
           backgroundColor: "#1e293b",
         }}
       >

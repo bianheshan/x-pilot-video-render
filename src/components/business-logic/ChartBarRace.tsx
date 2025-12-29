@@ -1,5 +1,5 @@
 import React from "react";
-import { useCurrentFrame, interpolate } from "remotion";
+import { interpolate, useCurrentFrame, useVideoConfig } from "remotion";
 import { useTheme } from "../../contexts/ThemeContext";
 
 export interface BarRaceItem {
@@ -9,44 +9,69 @@ export interface BarRaceItem {
 }
 
 export interface ChartBarRaceProps {
-  /** 数据数组，每个元素代表一个时间点的数据快照 */
-  data: BarRaceItem[][];
+  /** 数据数组，可以是多快照二维数组，或是一维的时间序列 */
+  data: BarRaceItem[][] | BarRaceItem[];
   /** 图表标题 */
   title?: string;
   /** 显示的条形数量 */
   topN?: number;
-  /** 每个数据快照的持续帧数 */
+  /** @deprecated Use snapshotDurationInFrames instead. */
   framesPerSnapshot?: number;
+  /** 每个快照的持续帧数 */
+  snapshotDurationInFrames?: number;
   /** 是否显示数值 */
   showValue?: boolean;
   /** 自定义颜色 */
   color?: string;
+  /** 图表宽度（px）。默认根据视频宽度推导。 */
+  chartWidth?: number;
+  barHeight?: number;
+  barGap?: number;
+  nameColumnWidth?: number;
+  rankColumnWidth?: number;
 }
 
 /**
- * 动态条形竞赛图
- * 
- * 展示排名随时间的变化，条形自动排序上下移动
- * 适用场景：销售排名、国家GDP对比、品牌价值变化等
- * 
- * 教学要点：
- * - 动态排序算法的可视化
- * - 时间序列数据的对比展示
- * - 平滑过渡动画的实现
+ * 动态条形竞赛图（帧驱动、可组合）
+ * - 排名/位置由 frame 计算（不依赖 CSS transition 时间驱动）
+ * - 支持快照数据插值，适合教学“排序/比较/时间序列”讲解
  */
 export const ChartBarRace: React.FC<ChartBarRaceProps> = ({
   data = [],
   title = "排名变化",
   topN = 10,
-  framesPerSnapshot = 60,
+  framesPerSnapshot,
+  snapshotDurationInFrames,
   showValue = true,
   color,
+  chartWidth,
+  barHeight = 50,
+  barGap = 10,
+  nameColumnWidth = 140,
+  rankColumnWidth = 60,
 }) => {
   const frame = useCurrentFrame();
   const theme = useTheme();
+  const { width: videoW } = useVideoConfig();
 
-  // 错误处理：数据验证
-  if (!data || data.length === 0) {
+  const safeFramesPerSnapshot = Math.max(
+    1,
+    Math.floor(snapshotDurationInFrames ?? framesPerSnapshot ?? 60)
+  );
+
+  const normalizeSnapshot = (snapshot?: BarRaceItem[] | null): BarRaceItem[] =>
+    Array.isArray(snapshot) ? snapshot.filter(Boolean) : [];
+
+  const normalizedSnapshots: BarRaceItem[][] =
+    data.length === 0
+      ? []
+      : Array.isArray(data[0])
+        ? (data as (BarRaceItem[] | null | undefined)[]).map((snapshot) => normalizeSnapshot(snapshot))
+        : (data as (BarRaceItem | null | undefined)[])
+            .filter((item): item is BarRaceItem => Boolean(item))
+            .map((item) => [item]);
+
+  if (normalizedSnapshots.length === 0) {
     return (
       <div
         style={{
@@ -58,64 +83,49 @@ export const ChartBarRace: React.FC<ChartBarRaceProps> = ({
           color: theme.colors.error || "#ef4444",
           fontSize: 24,
           fontFamily: theme.fonts.body,
+          backgroundColor: theme.colors.background,
         }}
       >
-        ⚠️ 数据为空，请提供有效的数据数组
+        数据为空，请提供有效的数据数组
       </div>
     );
   }
 
-  // 计算当前应该显示哪个数据快照
+  const lastSnapshotIndex = normalizedSnapshots.length - 1;
+
   const currentSnapshotIndex = Math.min(
-    Math.floor(frame / framesPerSnapshot),
-    data.length - 1
+    Math.floor(frame / safeFramesPerSnapshot),
+    lastSnapshotIndex
   );
-  const nextSnapshotIndex = Math.min(currentSnapshotIndex + 1, data.length - 1);
+  const nextSnapshotIndex = Math.min(currentSnapshotIndex + 1, lastSnapshotIndex);
 
-  // 计算当前快照内的进度 (0-1)
-  const progress = (frame % framesPerSnapshot) / framesPerSnapshot;
+  const progress = (frame % safeFramesPerSnapshot) / safeFramesPerSnapshot;
 
-  // 获取当前和下一个快照的数据
-  const currentSnapshot = data[currentSnapshotIndex] || [];
-  const nextSnapshot = data[nextSnapshotIndex] || currentSnapshot;
+  const currentSnapshot = normalizedSnapshots[currentSnapshotIndex];
+  const nextSnapshot = normalizedSnapshots[nextSnapshotIndex] ?? currentSnapshot;
 
-  // 对数据进行排序（降序）
-  const sortedCurrent = [...currentSnapshot]
-    .sort((a, b) => b.value - a.value)
-    .slice(0, topN);
-  const sortedNext = [...nextSnapshot]
-    .sort((a, b) => b.value - a.value)
-    .slice(0, topN);
+  const sortedCurrent = [...currentSnapshot].sort((a, b) => b.value - a.value).slice(0, topN);
+  const sortedNext = [...nextSnapshot].sort((a, b) => b.value - a.value).slice(0, topN);
 
-  // 找到最大值用于归一化
   const maxValue = Math.max(
     ...sortedCurrent.map((item) => item.value),
     ...sortedNext.map((item) => item.value),
-    1 // 避免除以0
+    1
   );
 
-  // 为每个条目创建插值数据
   const interpolatedData = sortedCurrent.map((currentItem, currentIndex) => {
-    // 在下一个快照中找到相同名称的项
     const nextIndex = sortedNext.findIndex((item) => item.name === currentItem.name);
     const nextItem = nextIndex >= 0 ? sortedNext[nextIndex] : currentItem;
 
-    // 插值位置（排名）
     const targetIndex = nextIndex >= 0 ? nextIndex : sortedNext.length;
-    const interpolatedIndex = interpolate(
-      progress,
-      [0, 1],
-      [currentIndex, targetIndex],
-      { extrapolateRight: "clamp" }
-    );
 
-    // 插值数值
-    const interpolatedValue = interpolate(
-      progress,
-      [0, 1],
-      [currentItem.value, nextItem.value],
-      { extrapolateRight: "clamp" }
-    );
+    const interpolatedIndex = interpolate(progress, [0, 1], [currentIndex, targetIndex], {
+      extrapolateRight: "clamp",
+    });
+
+    const interpolatedValue = interpolate(progress, [0, 1], [currentItem.value, nextItem.value], {
+      extrapolateRight: "clamp",
+    });
 
     return {
       name: currentItem.name,
@@ -125,15 +135,11 @@ export const ChartBarRace: React.FC<ChartBarRaceProps> = ({
     };
   });
 
-  // 添加新出现的项目
   sortedNext.forEach((nextItem, nextIndex) => {
     if (!interpolatedData.find((item) => item.name === nextItem.name)) {
-      const interpolatedValue = interpolate(
-        progress,
-        [0, 1],
-        [0, nextItem.value],
-        { extrapolateRight: "clamp" }
-      );
+      const interpolatedValue = interpolate(progress, [0, 1], [0, nextItem.value], {
+        extrapolateRight: "clamp",
+      });
 
       interpolatedData.push({
         name: nextItem.name,
@@ -144,13 +150,16 @@ export const ChartBarRace: React.FC<ChartBarRaceProps> = ({
     }
   });
 
-  // 按插值后的索引排序
-  interpolatedData.sort((a, b) => a.index - b.index);
+  const resolvedChartWidth =
+    chartWidth ?? Math.min(1000, Math.max(760, Math.floor(videoW - 280)));
 
-  const barHeight = 50;
-  const barGap = 10;
-  const chartWidth = 800;
   const chartHeight = (barHeight + barGap) * topN;
+  const barMaxWidth = Math.max(100, resolvedChartWidth - rankColumnWidth - nameColumnWidth - 20);
+
+  const visible = interpolatedData
+    .filter((d) => d.index < topN + 0.5)
+    .sort((a, b) => a.index - b.index)
+    .slice(0, topN);
 
   return (
     <div
@@ -166,11 +175,10 @@ export const ChartBarRace: React.FC<ChartBarRaceProps> = ({
         backgroundColor: theme.colors.background,
       }}
     >
-      {/* 标题 */}
       <h2
         style={{
           fontSize: 48,
-          fontWeight: "bold",
+          fontWeight: 800,
           color: theme.colors.text,
           marginBottom: 40,
           fontFamily: theme.fonts.heading,
@@ -179,17 +187,10 @@ export const ChartBarRace: React.FC<ChartBarRaceProps> = ({
         {title}
       </h2>
 
-      {/* 图表容器 */}
-      <div
-        style={{
-          position: "relative",
-          width: chartWidth,
-          height: chartHeight,
-        }}
-      >
-        {interpolatedData.slice(0, topN).map((item, index) => {
-          const barWidth = (item.value / maxValue) * (chartWidth - 200);
-          const yPosition = index * (barHeight + barGap);
+      <div style={{ position: "relative", width: resolvedChartWidth, height: chartHeight }}>
+        {visible.map((item, rankIdx) => {
+          const barWidth = (item.value / maxValue) * barMaxWidth;
+          const yPosition = item.index * (barHeight + barGap);
 
           return (
             <div
@@ -202,30 +203,27 @@ export const ChartBarRace: React.FC<ChartBarRaceProps> = ({
                 height: barHeight,
                 display: "flex",
                 alignItems: "center",
-                transition: "top 0.3s ease-out",
               }}
             >
-              {/* 排名 */}
               <div
                 style={{
-                  width: 50,
-                  fontSize: 32,
-                  fontWeight: "bold",
+                  width: rankColumnWidth,
+                  fontSize: 30,
+                  fontWeight: 800,
                   color: theme.colors.textSecondary,
                   textAlign: "right",
-                  marginRight: 15,
+                  marginRight: 14,
                 }}
               >
-                {index + 1}
+                {rankIdx + 1}
               </div>
 
-              {/* 名称 */}
               <div
                 style={{
-                  width: 120,
+                  width: nameColumnWidth,
                   fontSize: 20,
                   color: theme.colors.text,
-                  marginRight: 15,
+                  marginRight: 14,
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                   whiteSpace: "nowrap",
@@ -234,7 +232,6 @@ export const ChartBarRace: React.FC<ChartBarRaceProps> = ({
                 {item.name}
               </div>
 
-              {/* 条形 */}
               <div
                 style={{
                   width: barWidth,
@@ -246,14 +243,13 @@ export const ChartBarRace: React.FC<ChartBarRaceProps> = ({
                   justifyContent: "flex-end",
                   paddingRight: 15,
                   boxShadow: `0 4px 12px ${item.color}40`,
-                  transition: "width 0.3s ease-out",
                 }}
               >
                 {showValue && (
                   <span
                     style={{
                       fontSize: 20,
-                      fontWeight: "bold",
+                      fontWeight: 800,
                       color: "white",
                     }}
                   >
@@ -266,16 +262,15 @@ export const ChartBarRace: React.FC<ChartBarRaceProps> = ({
         })}
       </div>
 
-      {/* 时间指示器 */}
       <div
         style={{
           marginTop: 40,
-          fontSize: 32,
-          fontWeight: "bold",
+          fontSize: 28,
+          fontWeight: 800,
           color: theme.colors.primary,
         }}
       >
-        快照 {currentSnapshotIndex + 1} / {data.length}
+        快照 {currentSnapshotIndex + 1} / {normalizedSnapshots.length}
       </div>
     </div>
   );

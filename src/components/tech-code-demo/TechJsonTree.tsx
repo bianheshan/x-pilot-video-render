@@ -85,7 +85,6 @@ export const TechJsonTree: React.FC<TechJsonTreeProps> = ({
           style={{
             marginLeft: `${indent}px`,
             opacity,
-            transition: "opacity 0.3s",
           }}
         >
           <span style={{ color: themeColors.key }}>"{key}"</span>
@@ -102,7 +101,6 @@ export const TechJsonTree: React.FC<TechJsonTreeProps> = ({
           style={{
             marginLeft: `${indent}px`,
             opacity,
-            transition: "opacity 0.3s",
           }}
         >
           <span style={{ color: themeColors.key }}>"{key}"</span>
@@ -119,7 +117,6 @@ export const TechJsonTree: React.FC<TechJsonTreeProps> = ({
           style={{
             marginLeft: `${indent}px`,
             opacity,
-            transition: "opacity 0.3s",
           }}
         >
           <span style={{ color: themeColors.key }}>"{key}"</span>
@@ -136,7 +133,6 @@ export const TechJsonTree: React.FC<TechJsonTreeProps> = ({
           style={{
             marginLeft: `${indent}px`,
             opacity,
-            transition: "opacity 0.3s",
           }}
         >
           <span style={{ color: themeColors.key }}>"{key}"</span>

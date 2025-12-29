@@ -109,7 +109,6 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
                   borderLeft: isHighlighted
                     ? "4px solid #3b82f6"
                     : "4px solid transparent",
-                  transition: "all 0.3s ease",
                 }}
               >
                 <span

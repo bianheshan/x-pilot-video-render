@@ -1,188 +1,221 @@
 import React from "react";
+import type { CSSProperties } from "react";
 import { useCurrentFrame, useVideoConfig, interpolate, spring } from "remotion";
 import { useTheme } from "../../contexts/ThemeContext";
 
 export interface TitleCinematicIntroProps {
   text: string;
   subtitle?: string;
+  description?: string;
+  eyebrow?: string;
   color?: string;
   glowColor?: string;
+  backgroundGradient?: string;
+  layout?: "full-bleed" | "contained";
+  align?: "center" | "left";
+  showBackdrop?: boolean;
+  style?: CSSProperties;
+  contentStyle?: CSSProperties;
 }
 
 /**
- * 电影级开场标题
- * 极具冲击力的大标题，带光扫、模糊和 3D 挤压效果
- * 自动使用当前主题的颜色
+ * 电影级开场标题 - 具备可配置布局、光效与多层次文案。
+ * 旨在满足教学场景中的“知识可视化 + 动画 + 准确”要求。
  */
 export const TitleCinematicIntro: React.FC<TitleCinematicIntroProps> = ({
   text,
   subtitle,
+  description,
+  eyebrow,
   color,
   glowColor,
+  backgroundGradient,
+  layout = "full-bleed",
+  align = "center",
+  showBackdrop = true,
+  style,
+  contentStyle,
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const theme = useTheme();
 
-  // 使用主题颜色（如果未提供自定义颜色）
   const finalColor = color || theme.colors.text;
-  const finalGlowColor = glowColor || theme.colors.primary;
+  const finalGlow = glowColor || theme.colors.primary;
+  const gradient =
+    backgroundGradient || `linear-gradient(135deg, ${theme.colors.background} 0%, ${theme.colors.surface} 100%)`;
 
-  // 弹性进入动画
-  const scale = spring({
-    frame,
-    fps,
-    config: {
-      damping: 20,
-      mass: 0.5,
-    },
-  });
-
-  // 光扫效果位置
-  const lightSweep = interpolate(frame, [0, 60], [-200, 200], {
+  const scale = spring({ frame, fps, config: { damping: 20, mass: 0.6, stiffness: 140 } });
+  const lightSweep = interpolate(frame, [0, 60], [-220, 220], { extrapolateRight: "clamp" });
+  const blur = interpolate(frame, [0, 25], [18, 0], { extrapolateRight: "clamp" });
+  const letterSpacing = interpolate(frame, [0, 40], [28, 0], { extrapolateRight: "clamp" });
+  const subtitleOpacity = interpolate(frame, [30, 55], [0, 1], {
+    extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-
-  // 模糊效果（从模糊到清晰）
-  const blur = interpolate(frame, [0, 30], [20, 0], {
-    extrapolateRight: "clamp",
-  });
-
-  // 字母间距动画
-  const letterSpacing = interpolate(frame, [0, 40], [30, 0], {
-    extrapolateRight: "clamp",
-  });
-
-  // 副标题延迟进入
-  const subtitleOpacity = interpolate(frame, [30, 50], [0, 1], {
+  const descOpacity = interpolate(frame, [45, 70], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
+  const ContainerTag = layout === "full-bleed" ? "div" : "section";
+
   return (
-    <div
+    <ContainerTag
       style={{
-        position: "absolute",
+        position: layout === "full-bleed" ? "absolute" : "relative",
+        inset: layout === "full-bleed" ? 0 : undefined,
         width: "100%",
-        height: "100%",
+        height: layout === "full-bleed" ? "100%" : "auto",
+        minHeight: layout === "full-bleed" ? "100%" : 480,
         display: "flex",
         flexDirection: "column",
         justifyContent: "center",
-        alignItems: "center",
-        background: `linear-gradient(135deg, ${theme.colors.background} 0%, ${theme.colors.surface} 100%)`,
+        alignItems: align === "center" ? "center" : "flex-start",
+        background: layout === "full-bleed" ? gradient : "transparent",
+        padding: layout === "full-bleed" ? "0" : 60,
         overflow: "hidden",
+        ...style,
       }}
     >
-      {/* 背景光效 */}
-      <div
-        style={{
-          position: "absolute",
-          width: "100%",
-          height: "100%",
-          background: `radial-gradient(circle at 50% 50%, ${finalGlowColor}22 0%, transparent 70%)`,
-          opacity: 0.6,
-        }}
-      />
+      {showBackdrop && layout === "full-bleed" && (
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: `radial-gradient(circle at 50% 50%, ${finalGlow}22 0%, transparent 70%)`,
+            opacity: 0.75,
+          }}
+        />
+      )}
 
-      {/* 主标题 */}
       <div
         style={{
           position: "relative",
-          transform: `scale(${scale})`,
-          filter: `blur(${blur}px)`,
+          zIndex: 1,
+          width: "100%",
+          maxWidth: 1200,
+          textAlign: align,
+          padding: layout === "full-bleed" ? "0 80px" : 0,
+          color: finalColor,
+          ...contentStyle,
         }}
       >
-        <h1
+        {eyebrow && (
+          <div
+            style={{
+              fontSize: 24,
+              letterSpacing: 6,
+              textTransform: "uppercase",
+              fontWeight: 600,
+              color: `${finalGlow}`,
+              marginBottom: 20,
+            }}
+          >
+            {eyebrow}
+          </div>
+        )}
+
+        <div
           style={{
-            fontSize: 120,
-            fontWeight: 900,
-            color: finalColor,
-            margin: 0,
-            letterSpacing: `${letterSpacing}px`,
-            textTransform: "uppercase",
-            fontFamily: theme.fonts.heading,
-            textShadow: `
-              0 0 20px ${finalGlowColor}88,
-              0 0 40px ${finalGlowColor}66,
-              0 0 60px ${finalGlowColor}44,
-              0 10px 30px rgba(0,0,0,0.8)
-            `,
             position: "relative",
-            overflow: "hidden",
+            display: "inline-flex",
+            flexDirection: "column",
+            alignItems: align === "center" ? "center" : "flex-start",
+            transform: `scale(${scale})`,
+            filter: `blur(${blur}px)` ,
           }}
         >
-          {text}
-          
-          {/* 光扫效果 */}
+          <h1
+            style={{
+              fontSize: layout === "full-bleed" ? 124 : 96,
+              fontWeight: 900,
+              margin: 0,
+              letterSpacing,
+              textTransform: "uppercase",
+              fontFamily: theme.fonts.heading,
+              textShadow: `0 0 20px ${finalGlow}88, 0 10px 30px rgba(0,0,0,0.7)`,
+            }}
+          >
+            {text}
+            <span
+              style={{
+                position: "absolute",
+                top: 0,
+                left: lightSweep,
+                width: 120,
+                height: "100%",
+                background: `linear-gradient(90deg, transparent, ${finalGlow}aa, transparent)`,
+                transform: "skewX(-20deg)",
+                filter: "blur(12px)",
+              }}
+            />
+          </h1>
+
           <div
+            aria-hidden
             style={{
               position: "absolute",
               top: 0,
-              left: lightSweep,
-              width: 100,
-              height: "100%",
-              background: `linear-gradient(90deg, transparent, ${finalGlowColor}aa, transparent)`,
-              transform: "skewX(-20deg)",
-              filter: "blur(10px)",
+              left: 0,
+              right: 0,
+              bottom: 0,
+              color: finalGlow,
+              opacity: 0.25,
+              textShadow: `0 0 40px ${finalGlow}`,
+              transform: "translateY(10px) scale(1.02)",
+              pointerEvents: "none",
             }}
-          />
-        </h1>
-
-        {/* 3D 挤压效果（文字阴影层） */}
-        <div
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            fontSize: 120,
-            fontWeight: 900,
-            color: finalGlowColor,
-            margin: 0,
-            letterSpacing: `${letterSpacing}px`,
-            textTransform: "uppercase",
-            fontFamily: theme.fonts.heading,
-            opacity: 0.3,
-            transform: "translateZ(-50px) translateY(5px)",
-            filter: "blur(2px)",
-            zIndex: -1,
-          }}
-        >
-          {text}
+          >
+            {text}
+          </div>
         </div>
-      </div>
 
-      {/* 副标题 */}
-      {subtitle && (
-        <p
+        {subtitle && (
+          <p
+            style={{
+              fontSize: 34,
+              color: theme.colors.textSecondary,
+              marginTop: 40,
+              letterSpacing: 8,
+              textTransform: "uppercase",
+              fontWeight: 300,
+              opacity: subtitleOpacity,
+              textShadow: `0 0 12px ${finalGlow}55`,
+            }}
+          >
+            {subtitle}
+          </p>
+        )}
+
+        {description && (
+          <p
+            style={{
+              fontSize: 24,
+              lineHeight: 1.7,
+              maxWidth: 900,
+              marginTop: 24,
+              color: theme.colors.text,
+              opacity: descOpacity,
+            }}
+          >
+            {description}
+          </p>
+        )}
+
+        <div
+          aria-hidden
           style={{
-            fontSize: 32,
-            color: theme.colors.textSecondary,
-            marginTop: 30,
-            letterSpacing: 8,
-            textTransform: "uppercase",
-            fontWeight: 300,
-            opacity: subtitleOpacity,
-            textShadow: `0 0 10px ${finalGlowColor}44`,
-            fontFamily: theme.fonts.body,
+            marginTop: 50,
+            width: align === "center" ? 620 : 420,
+            height: 2,
+            background: `linear-gradient(90deg, transparent, ${finalGlow}, transparent)`,
+            boxShadow: `0 0 15px ${finalGlow}`,
+            opacity: subtitle ? subtitleOpacity : 1,
           }}
-        >
-          {subtitle}
-        </p>
-      )}
-
-      {/* 底部装饰线 */}
-      <div
-        style={{
-          position: "absolute",
-          bottom: 100,
-          width: interpolate(frame, [20, 60], [0, 600], {
-            extrapolateRight: "clamp",
-          }),
-          height: 2,
-          background: `linear-gradient(90deg, transparent, ${finalGlowColor}, transparent)`,
-          boxShadow: `0 0 10px ${finalGlowColor}`,
-        }}
-      />
-    </div>
+        />
+      </div>
+    </ContainerTag>
   );
 };

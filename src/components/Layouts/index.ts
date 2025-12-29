@@ -1,5 +1,6 @@
 // 基础布局
 export { FullScreen } from "./FullScreen";
+export { SafeArea } from "./SafeArea";
 export { SplitScreen } from "./SplitScreen";
 export { PictureInPicture } from "./PictureInPicture";
 

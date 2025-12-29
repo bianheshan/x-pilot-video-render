@@ -3,61 +3,73 @@
   "fps": 30,
   "width": 1920,
   "height": 1080,
+  "theme": "tech",
   "scenes": [
     {
-      "id": "scene-1",
-      "name": "标题介绍",
-      "durationInFrames": 90,
-      "component": "scene-1.tsx"
+      "id": "scene_1",
+      "name": "Introduction to the concept of 'Should' and 'Advice'.",
+      "durationInFrames": 255,
+      "component": "scene_1.tsx"
     },
     {
-      "id": "scene-2",
-      "name": "DNA 组成",
-      "durationInFrames": 150,
-      "component": "scene-2.tsx"
+      "id": "scene_2",
+      "name": "Explain grammatical category (Modal Verb).",
+      "durationInFrames": 255,
+      "component": "scene_2.tsx"
     },
     {
-      "id": "scene-3",
-      "name": "碱基配对",
-      "durationInFrames": 120,
-      "component": "scene-3.tsx"
+      "id": "scene_3",
+      "name": "Teach the form constraints (No -ing, No -s).",
+      "durationInFrames": 300,
+      "component": "scene_3.tsx"
     },
     {
-      "id": "scene-4",
-      "name": "代码演示",
+      "id": "scene_4",
+      "name": "Provide simple safety examples.",
+      "durationInFrames": 240,
+      "component": "scene_4.tsx"
+    },
+    {
+      "id": "scene_5",
+      "name": "Introduce context and comparatives.",
+      "durationInFrames": 255,
+      "component": "scene_5.tsx"
+    },
+    {
+      "id": "scene_6",
+      "name": "Reiterate general safety rules.",
       "durationInFrames": 180,
-      "component": "scene-4.tsx"
+      "component": "scene_6.tsx"
     },
     {
-      "id": "scene-5",
-      "name": "双螺旋结构",
-      "durationInFrames": 150,
-      "component": "scene-5.tsx"
+      "id": "scene_7",
+      "name": "Specific advice for bicycles.",
+      "durationInFrames": 180,
+      "component": "scene_7.tsx"
     },
     {
-      "id": "scene-6",
-      "name": "DNA 复制",
-      "durationInFrames": 150,
-      "component": "scene-6.tsx"
+      "id": "scene_8",
+      "name": "Specific advice for motorcycles.",
+      "durationInFrames": 210,
+      "component": "scene_8.tsx"
     },
     {
-      "id": "scene-7",
-      "name": "应用场景",
-      "durationInFrames": 120,
-      "component": "scene-7.tsx"
+      "id": "scene_9",
+      "name": "Correct common grammar mistakes.",
+      "durationInFrames": 180,
+      "component": "scene_9.tsx"
     },
     {
-      "id": "scene-8",
-      "name": "结束",
-      "durationInFrames": 90,
-      "component": "scene-8.tsx"
+      "id": "scene_10",
+      "name": "Interactive practice.",
+      "durationInFrames": 240,
+      "component": "scene_10.tsx"
     },
     {
-      "id": "scene_1_intro",
-      "name": "引入主题，建立从文本到数学的认知框架 (Know: 模型本质是数学)",
-      "durationInFrames": 90,
-      "component": "scene_1_intro.tsx"
+      "id": "scene_11",
+      "name": "Recap and conclusion.",
+      "durationInFrames": 360,
+      "component": "scene_11.tsx"
     }
-  ],
-  "theme": "tech"
+  ]
 }

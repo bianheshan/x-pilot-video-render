@@ -302,17 +302,10 @@ export const IndLidarScan: React.FC<IndLidarScanProps> = ({
           <circle
             cx={centerX}
             cy={centerY}
-            r={10}
+            r={10 + 5 * (0.5 + 0.5 * Math.sin(frame * 0.2))}
             fill="#00FF00"
             opacity={0.5}
-          >
-            <animate
-              attributeName="r"
-              values="10;15;10"
-              dur="1s"
-              repeatCount="indefinite"
-            />
-          </circle>
+          />
         </g>
 
         {/* 坐标轴 */}

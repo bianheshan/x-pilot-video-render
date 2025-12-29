@@ -156,7 +156,6 @@ export const ChartSunburstZoom: React.FC<ChartSunburstZoomProps> = ({
         height={height}
         style={{
           transform: `scale(${scale}) rotate(${rotation * 0.1}deg)`,
-          transition: "transform 0.3s ease-out",
         }}
       >
         <g transform={`translate(${width / 2}, ${height / 2})`}>

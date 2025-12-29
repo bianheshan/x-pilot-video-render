@@ -41,6 +41,9 @@ export type { ListStaggeredEntryProps } from "./ListStaggeredEntry";
 export { ListMindmapTree } from "./ListMindmapTree";
 export type { ListMindmapTreeProps, TreeNode } from "./ListMindmapTree";
 
+export { ListBulletPoints } from "./ListBulletPoints";
+export type { ListBulletPointsProps, BulletPointItem } from "./ListBulletPoints";
+
 // ============ 引言组件 ============
 export { QuoteParallaxBg } from "./QuoteParallaxBg";
 export type { QuoteParallaxBgProps } from "./QuoteParallaxBg";

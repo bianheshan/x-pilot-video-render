@@ -1,57 +1,54 @@
 import React from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { useCurrentFrame, interpolate } from "remotion";
 import { useTheme } from "../../contexts/ThemeContext";
 
 export interface CardNeumorphismProps {
   title: string;
-  content: string;
-  icon?: string;
-  style?: "raised" | "pressed";
+  content: ReactNode;
+  icon?: ReactNode;
+  style?: "raised" | "pressed" | CSSProperties;
+  variant?: "raised" | "pressed";
+  accentColor?: string;
+  cardStyle?: CSSProperties;
+  eyebrow?: string;
+  footer?: ReactNode;
 }
 
 /**
- * 新拟态卡片
- * 凸起或凹陷的软浮雕效果，适合极简 UI 展示
- * 自动使用当前主题的颜色
+ * 新拟态卡片 - 通过软阴影突出知识要点，支持自定义眉标题与底部补充说明。
  */
 export const CardNeumorphism: React.FC<CardNeumorphismProps> = ({
   title,
   content,
   icon = "💡",
-  style = "raised",
+  style: styleProp = "raised",
+  variant,
+  accentColor,
+  cardStyle,
+  eyebrow,
+  footer,
 }) => {
   const frame = useCurrentFrame();
   const theme = useTheme();
 
-  // 卡片进入动画
-  const cardY = interpolate(frame, [0, 35], [50, 0], {
-    extrapolateRight: "clamp",
-  });
+  const resolvedVariant = typeof styleProp === "string" ? styleProp : variant || "raised";
+  const legacyCustomStyle = typeof styleProp === "object" ? (styleProp as CSSProperties) : undefined;
+  const mergedCardStyle: CSSProperties | undefined =
+    legacyCustomStyle || cardStyle ? { ...legacyCustomStyle, ...cardStyle } : cardStyle;
 
-  const cardOpacity = interpolate(frame, [0, 30], [0, 1], {
-    extrapolateRight: "clamp",
-  });
-
-  // 悬浮动画
+  const cardY = interpolate(frame, [0, 35], [50, 0], { extrapolateRight: "clamp" });
+  const cardOpacity = interpolate(frame, [0, 30], [0, 1], { extrapolateRight: "clamp" });
   const floatY = Math.sin(frame / 40) * 5;
-
-  // 阴影强度动画
   const shadowIntensity = 0.8 + Math.sin(frame / 30) * 0.2;
-
-  // 使用主题背景色
   const bgColor = theme.colors.surface;
 
-  // 根据样式设置阴影
-  const boxShadow =
-    style === "raised"
-      ? `
-          ${20 * shadowIntensity}px ${20 * shadowIntensity}px ${40 * shadowIntensity}px ${theme.colors.shadow}99,
-          -${20 * shadowIntensity}px -${20 * shadowIntensity}px ${40 * shadowIntensity}px rgba(255, 255, 255, 0.1)
-        `
-      : `
-          inset ${15 * shadowIntensity}px ${15 * shadowIntensity}px ${30 * shadowIntensity}px ${theme.colors.shadow}99,
-          inset -${15 * shadowIntensity}px -${15 * shadowIntensity}px ${30 * shadowIntensity}px rgba(255, 255, 255, 0.1)
-        `;
+  const outerShadow =
+    resolvedVariant === "raised"
+      ? `${20 * shadowIntensity}px ${20 * shadowIntensity}px ${40 * shadowIntensity}px ${theme.colors.shadow}99, -${20 *
+          shadowIntensity}px -${20 * shadowIntensity}px ${40 * shadowIntensity}px rgba(255, 255, 255, 0.12)`
+      : `inset ${15 * shadowIntensity}px ${15 * shadowIntensity}px ${30 * shadowIntensity}px ${theme.colors.shadow}99, inset -${15 *
+          shadowIntensity}px -${15 * shadowIntensity}px ${30 * shadowIntensity}px rgba(255, 255, 255, 0.08)`;
 
   return (
     <div
@@ -64,54 +61,36 @@ export const CardNeumorphism: React.FC<CardNeumorphismProps> = ({
         alignItems: "center",
         backgroundColor: theme.colors.background,
         overflow: "hidden",
+        padding: 40,
       }}
     >
-      {/* 背景装饰圆 */}
-      <div
-        style={{
-          position: "absolute",
-          width: 500,
-          height: 500,
-          borderRadius: "50%",
-          top: -200,
-          right: -200,
-          boxShadow: `
-            30px 30px 60px ${theme.colors.shadow}66,
-            -30px -30px 60px rgba(255, 255, 255, 0.05)
-          `,
-        }}
-      />
-
-      <div
-        style={{
-          position: "absolute",
-          width: 400,
-          height: 400,
-          borderRadius: "50%",
-          bottom: -150,
-          left: -150,
-          boxShadow: `
-            30px 30px 60px ${theme.colors.shadow}66,
-            -30px -30px 60px rgba(255, 255, 255, 0.05)
-          `,
-        }}
-      />
-
-      {/* 新拟态卡片 */}
       <div
         style={{
           position: "relative",
-          width: 700,
+          width: 720,
           padding: 60,
           backgroundColor: bgColor,
           borderRadius: 40,
-          boxShadow: boxShadow,
+          boxShadow: outerShadow,
           transform: `translateY(${cardY + floatY}px)`,
           opacity: cardOpacity,
-          transition: "box-shadow 0.3s ease",
+          ...mergedCardStyle,
         }}
       >
-        {/* 图标容器 */}
+        {eyebrow && (
+          <div
+            style={{
+              fontSize: 18,
+              letterSpacing: 3,
+              textTransform: "uppercase",
+              color: accentColor || theme.colors.primary,
+              marginBottom: 10,
+            }}
+          >
+            {eyebrow}
+          </div>
+        )}
+
         <div
           style={{
             width: 100,
@@ -123,22 +102,16 @@ export const CardNeumorphism: React.FC<CardNeumorphismProps> = ({
             borderRadius: "50%",
             backgroundColor: bgColor,
             boxShadow:
-              style === "raised"
-                ? `
-                  10px 10px 20px ${theme.colors.shadow}80,
-                  -10px -10px 20px rgba(255, 255, 255, 0.1)
-                `
-                : `
-                  inset 8px 8px 16px ${theme.colors.shadow}80,
-                  inset -8px -8px 16px rgba(255, 255, 255, 0.1)
-                `,
+              resolvedVariant === "raised"
+                ? `10px 10px 20px ${theme.colors.shadow}80, -10px -10px 20px rgba(255, 255, 255, 0.1)`
+                : `inset 8px 8px 16px ${theme.colors.shadow}80, inset -8px -8px 16px rgba(255, 255, 255, 0.1)`,
             fontSize: 50,
+            color: accentColor || theme.colors.primary,
           }}
         >
           {icon}
         </div>
 
-        {/* 标题 */}
         <h2
           style={{
             fontSize: 44,
@@ -147,17 +120,11 @@ export const CardNeumorphism: React.FC<CardNeumorphismProps> = ({
             margin: "0 0 25px 0",
             textAlign: "center",
             fontFamily: theme.fonts.heading,
-            letterSpacing: 1,
-            textShadow: `
-              2px 2px 4px ${theme.colors.shadow}66,
-              -2px -2px 4px rgba(255, 255, 255, 0.05)
-            `,
           }}
         >
           {title}
         </h2>
 
-        {/* 分隔线 */}
         <div
           style={{
             width: "80%",
@@ -166,20 +133,13 @@ export const CardNeumorphism: React.FC<CardNeumorphismProps> = ({
             borderRadius: 2,
             backgroundColor: bgColor,
             boxShadow:
-              style === "raised"
-                ? `
-                  inset 3px 3px 6px ${theme.colors.shadow}66,
-                  inset -3px -3px 6px rgba(255, 255, 255, 0.05)
-                `
-                : `
-                  3px 3px 6px ${theme.colors.shadow}66,
-                  -3px -3px 6px rgba(255, 255, 255, 0.05)
-                `,
+              resolvedVariant === "raised"
+                ? `inset 3px 3px 6px ${theme.colors.shadow}66, inset -3px -3px 6px rgba(255, 255, 255, 0.05)`
+                : `3px 3px 6px ${theme.colors.shadow}66, -3px -3px 6px rgba(255, 255, 255, 0.05)`,
           }}
         />
 
-        {/* 内容 */}
-        <p
+        <div
           style={{
             fontSize: 22,
             lineHeight: 1.8,
@@ -189,50 +149,23 @@ export const CardNeumorphism: React.FC<CardNeumorphismProps> = ({
             fontFamily: theme.fonts.body,
           }}
         >
-          {content}
-        </p>
-
-        {/* 底部装饰按钮 */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            gap: 20,
-            marginTop: 40,
-          }}
-        >
-          {[0, 1, 2].map((i) => (
-            <div
-              key={i}
-              style={{
-                width: 50,
-                height: 50,
-                borderRadius: "50%",
-                backgroundColor: bgColor,
-                boxShadow:
-                  style === "raised"
-                    ? `
-                      ${6 + Math.sin(frame / 20 + i) * 2}px ${6 + Math.sin(frame / 20 + i) * 2}px ${12 + Math.sin(frame / 20 + i) * 4}px ${theme.colors.shadow}80,
-                      -${6 + Math.sin(frame / 20 + i) * 2}px -${6 + Math.sin(frame / 20 + i) * 2}px ${12 + Math.sin(frame / 20 + i) * 4}px rgba(255, 255, 255, 0.1)
-                    `
-                    : `
-                      inset ${4 + Math.sin(frame / 20 + i) * 2}px ${4 + Math.sin(frame / 20 + i) * 2}px ${8 + Math.sin(frame / 20 + i) * 4}px ${theme.colors.shadow}80,
-                      inset -${4 + Math.sin(frame / 20 + i) * 2}px -${4 + Math.sin(frame / 20 + i) * 2}px ${8 + Math.sin(frame / 20 + i) * 4}px rgba(255, 255, 255, 0.1)
-                    `,
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                fontSize: 20,
-                color: theme.colors.textSecondary,
-              }}
-            >
-              {i === 0 ? "◀" : i === 1 ? "●" : "▶"}
-            </div>
-          ))}
+          {typeof content === "string" ? <span>{content}</span> : content}
         </div>
 
-        {/* 角落高光 */}
-        {style === "raised" && (
+        {footer && (
+          <div
+            style={{
+              marginTop: 30,
+              fontSize: 18,
+              textAlign: "center",
+              color: theme.colors.textSecondary,
+            }}
+          >
+            {footer}
+          </div>
+        )}
+
+        {resolvedVariant === "raised" && (
           <>
             <div
               style={{
@@ -260,21 +193,23 @@ export const CardNeumorphism: React.FC<CardNeumorphismProps> = ({
             />
           </>
         )}
-      </div>
 
-      {/* 样式指示器 */}
-      <div
-        style={{
-          position: "absolute",
-          bottom: 40,
-          fontSize: 16,
-          color: theme.colors.textSecondary,
-          fontFamily: theme.fonts.mono,
-          letterSpacing: 2,
-          textTransform: "uppercase",
-        }}
-      >
-        Neumorphism • {style === "raised" ? "Raised" : "Pressed"}
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            bottom: 40,
+            fontSize: 16,
+            color: theme.colors.textSecondary,
+            fontFamily: theme.fonts.mono,
+            letterSpacing: 2,
+            textTransform: "uppercase",
+            left: "50%",
+            transform: "translateX(-50%)",
+          }}
+        >
+          Neumorphism • {resolvedVariant === "raised" ? "Raised" : "Pressed"}
+        </div>
       </div>
     </div>
   );

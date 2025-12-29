@@ -1,78 +1,64 @@
 import React from "react";
-import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
+import { interpolate, random, useCurrentFrame } from "remotion";
 import { useTheme } from "../../contexts/ThemeContext";
+
+type Seed = string | number;
 
 export interface StatRollingCounterProps {
   targetValue: number;
   label: string;
   prefix?: string;
   suffix?: string;
+  /** @deprecated Use durationInFrames instead. */
   duration?: number;
+  durationInFrames?: number;
   color?: string;
+  /** Deterministic seed (avoid Math.random). */
+  seed?: Seed;
 }
 
 /**
- * 数字滚动器
- * 数字像老虎机一样快速滚动并停在最终值
+ * 数字滚动器（帧驱动、可复现）
+ * - 不使用 Math.random，避免渲染不确定性
+ * - 所有动效由 frame 计算，避免 CSS transition 时间驱动
  */
 export const StatRollingCounter: React.FC<StatRollingCounterProps> = ({
   targetValue,
   label,
   prefix = "",
   suffix = "",
-  duration = 90,
+  duration,
+  durationInFrames,
   color,
+  seed,
 }) => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
   const theme = useTheme();
-  
-  // 使用主题颜色或传入的颜色
+
+  const durationFrames = Math.max(1, Math.floor(durationInFrames ?? duration ?? 90));
   const counterColor = color || theme.colors.primary;
+  const seedBase = (seed ?? "StatRollingCounter").toString();
 
-  // 数字滚动动画（带缓动）
-  const currentValue = interpolate(
-    frame,
-    [0, duration],
-    [0, targetValue],
-    {
-      extrapolateRight: "clamp",
-      easing: (t) => {
-        // 自定义缓动函数：快速启动，慢速结束
-        return t < 0.5
-          ? 4 * t * t * t
-          : 1 - Math.pow(-2 * t + 2, 3) / 2;
-      },
-    }
-  );
+  const currentValue = interpolate(frame, [0, durationFrames], [0, targetValue], {
+    extrapolateRight: "clamp",
+    easing: (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2),
+  });
 
-  // 将数字转换为字符串并分离每一位
   const valueString = Math.floor(currentValue).toString();
   const digits = valueString.split("");
 
-  // 容器进入动画
-  const containerScale = interpolate(frame, [0, 20], [0.8, 1], {
-    extrapolateRight: "clamp",
-  });
-
-  const containerOpacity = interpolate(frame, [0, 15], [0, 1], {
-    extrapolateRight: "clamp",
-  });
-
-  // 标签延迟进入
-  const labelOpacity = interpolate(frame, [duration - 20, duration], [0, 1], {
+  const containerScale = interpolate(frame, [0, 20], [0.8, 1], { extrapolateRight: "clamp" });
+  const containerOpacity = interpolate(frame, [0, 15], [0, 1], { extrapolateRight: "clamp" });
+  const labelOpacity = interpolate(frame, [durationFrames - 20, durationFrames], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  // 发光效果
   const glowIntensity = 0.6 + Math.sin(frame / 15) * 0.4;
+  const isComplete = frame >= durationFrames;
+  const completeScale = isComplete ? 1 + Math.sin((frame - durationFrames) / 10) * 0.05 : 1;
 
-  // 完成动画
-  const isComplete = frame >= duration;
-  const completeScale = isComplete
-    ? 1 + Math.sin((frame - duration) / 10) * 0.05
-    : 1;
+  const progressWidth = clamp((frame / durationFrames) * 100, 0, 100);
 
   return (
     <div
@@ -88,7 +74,6 @@ export const StatRollingCounter: React.FC<StatRollingCounterProps> = ({
         overflow: "hidden",
       }}
     >
-      {/* 背景光效 */}
       <div
         style={{
           position: "absolute",
@@ -99,10 +84,10 @@ export const StatRollingCounter: React.FC<StatRollingCounterProps> = ({
         }}
       />
 
-      {/* 背景数字流 */}
       {Array.from({ length: 10 }).map((_, i) => {
         const streamY = ((frame * (2 + i * 0.5)) % 120) - 20;
         const streamX = 10 + i * 10;
+        const digit = Math.floor(random(`${seedBase}:bgDigit:${i}:${frame}`) * 10);
 
         return (
           <div
@@ -115,15 +100,14 @@ export const StatRollingCounter: React.FC<StatRollingCounterProps> = ({
               color: counterColor,
               opacity: 0.1,
               fontFamily: theme.fonts.mono,
-              fontWeight: "bold",
+              fontWeight: 800,
             }}
           >
-            {Math.floor(Math.random() * 10)}
+            {digit}
           </div>
         );
       })}
 
-      {/* 主容器 */}
       <div
         style={{
           transform: `scale(${containerScale * completeScale})`,
@@ -134,7 +118,6 @@ export const StatRollingCounter: React.FC<StatRollingCounterProps> = ({
           gap: 30,
         }}
       >
-        {/* 数字显示区 */}
         <div
           style={{
             display: "flex",
@@ -144,18 +127,14 @@ export const StatRollingCounter: React.FC<StatRollingCounterProps> = ({
             background: theme.colors.surface,
             borderRadius: 20,
             border: `3px solid ${counterColor}`,
-            boxShadow: `
-              0 0 40px ${counterColor}${Math.floor(glowIntensity * 100).toString(16)},
-              inset 0 0 20px ${counterColor}33
-            `,
+            boxShadow: `0 0 40px ${counterColor}${Math.floor(glowIntensity * 100).toString(16)}, inset 0 0 20px ${counterColor}33`,
           }}
         >
-          {/* 前缀 */}
           {prefix && (
             <span
               style={{
                 fontSize: 80,
-                fontWeight: "bold",
+                fontWeight: 900,
                 color: counterColor,
                 fontFamily: theme.fonts.mono,
                 textShadow: `0 0 20px ${counterColor}`,
@@ -165,12 +144,10 @@ export const StatRollingCounter: React.FC<StatRollingCounterProps> = ({
             </span>
           )}
 
-          {/* 滚动数字 */}
           {digits.map((digit, index) => {
-            // 每位数字的滚动效果
             const digitProgress = interpolate(
               frame,
-              [index * 5, duration - (digits.length - index) * 3],
+              [index * 5, durationFrames - (digits.length - index) * 3],
               [0, 1],
               {
                 extrapolateLeft: "clamp",
@@ -178,11 +155,7 @@ export const StatRollingCounter: React.FC<StatRollingCounterProps> = ({
               }
             );
 
-            const displayDigit = Math.floor(
-              interpolate(digitProgress, [0, 1], [0, parseInt(digit)])
-            );
-
-            // 数字滚动时的模糊效果
+            const displayDigit = Math.floor(interpolate(digitProgress, [0, 1], [0, parseInt(digit, 10)]));
             const digitBlur = digitProgress < 1 ? 2 : 0;
 
             return (
@@ -198,7 +171,6 @@ export const StatRollingCounter: React.FC<StatRollingCounterProps> = ({
                   border: `2px solid ${counterColor}44`,
                 }}
               >
-                {/* 滚动数字容器 */}
                 <div
                   style={{
                     position: "absolute",
@@ -220,11 +192,10 @@ export const StatRollingCounter: React.FC<StatRollingCounterProps> = ({
                         justifyContent: "center",
                         alignItems: "center",
                         fontSize: 80,
-                        fontWeight: "bold",
-                        color: num === displayDigit ? color : `${color}66`,
-                        fontFamily: "'Courier New', monospace",
-                        textShadow:
-                          num === displayDigit ? `0 0 20px ${color}` : "none",
+                        fontWeight: 900,
+                        color: num === displayDigit ? counterColor : `${counterColor}66`,
+                        fontFamily: theme.fonts.mono,
+                        textShadow: num === displayDigit ? `0 0 20px ${counterColor}` : "none",
                       }}
                     >
                       {num}
@@ -232,7 +203,6 @@ export const StatRollingCounter: React.FC<StatRollingCounterProps> = ({
                   ))}
                 </div>
 
-                {/* 高光效果 */}
                 <div
                   style={{
                     position: "absolute",
@@ -248,12 +218,11 @@ export const StatRollingCounter: React.FC<StatRollingCounterProps> = ({
             );
           })}
 
-          {/* 后缀 */}
           {suffix && (
             <span
               style={{
                 fontSize: 80,
-                fontWeight: "bold",
+                fontWeight: 900,
                 color: counterColor,
                 fontFamily: theme.fonts.mono,
                 textShadow: `0 0 20px ${counterColor}`,
@@ -264,11 +233,10 @@ export const StatRollingCounter: React.FC<StatRollingCounterProps> = ({
           )}
         </div>
 
-        {/* 标签 */}
         <h3
           style={{
             fontSize: 40,
-            fontWeight: 600,
+            fontWeight: 700,
             color: theme.colors.text,
             margin: 0,
             fontFamily: theme.fonts.body,
@@ -281,7 +249,6 @@ export const StatRollingCounter: React.FC<StatRollingCounterProps> = ({
           {label}
         </h3>
 
-        {/* 进度条 */}
         <div
           style={{
             width: 400,
@@ -293,17 +260,15 @@ export const StatRollingCounter: React.FC<StatRollingCounterProps> = ({
         >
           <div
             style={{
-              width: `${(frame / duration) * 100}%`,
+              width: `${progressWidth}%`,
               height: "100%",
               background: `linear-gradient(90deg, ${counterColor}, ${counterColor}cc)`,
               boxShadow: `0 0 10px ${counterColor}`,
-              transition: "width 0.1s linear",
             }}
           />
         </div>
       </div>
 
-      {/* 完成标识 */}
       {isComplete && (
         <div
           style={{
@@ -312,21 +277,20 @@ export const StatRollingCounter: React.FC<StatRollingCounterProps> = ({
             fontSize: 24,
             color: counterColor,
             fontFamily: theme.fonts.mono,
-            opacity: interpolate(frame, [duration, duration + 20], [0, 1], {
+            opacity: interpolate(frame, [durationFrames, durationFrames + 20], [0, 1], {
               extrapolateRight: "clamp",
             }),
             textShadow: `0 0 10px ${counterColor}`,
           }}
         >
-          ✓ TARGET REACHED
+          TARGET REACHED
         </div>
       )}
 
-      {/* 装饰粒子 */}
       {isComplete &&
         Array.from({ length: 20 }).map((_, i) => {
           const angle = (i / 20) * Math.PI * 2;
-          const distance = ((frame - duration) * 5) % 300;
+          const distance = ((frame - durationFrames) * 5) % 300;
           const x = Math.cos(angle) * distance;
           const y = Math.sin(angle) * distance;
           const particleOpacity = interpolate(distance, [0, 300], [1, 0]);
@@ -352,3 +316,5 @@ export const StatRollingCounter: React.FC<StatRollingCounterProps> = ({
     </div>
   );
 };
+
+const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));

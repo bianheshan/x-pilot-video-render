@@ -235,16 +235,8 @@ export const IndAssemblyLine: React.FC<IndAssemblyLineProps> = ({
           fill={isActive ? "#00FF00" : "#666"}
           stroke="#333"
           strokeWidth={2}
-        >
-          {isActive && (
-            <animate
-              attributeName="opacity"
-              values="1;0.3;1"
-              dur="1s"
-              repeatCount="indefinite"
-            />
-          )}
-        </circle>
+          opacity={isActive ? interpolate(frame % 30, [0, 15, 30], [1, 0.3, 1]) : 1}
+        />
       </g>
     );
   };

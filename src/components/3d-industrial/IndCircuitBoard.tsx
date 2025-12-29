@@ -1,7 +1,9 @@
 import React, { useMemo } from "react";
-import { useCurrentFrame } from "remotion";
+import { random, useCurrentFrame, useVideoConfig } from "remotion";
 import { useTheme } from "../../contexts/ThemeContext";
 import * as d3 from "d3";
+
+type Seed = string | number;
 
 export interface Component {
   id: string;
@@ -22,19 +24,19 @@ export interface IndCircuitBoardProps {
   signals?: Signal[];
   title?: string;
   showLabels?: boolean;
+  /** Deterministic seed (avoid Math.random + SMIL). */
+  seed?: Seed;
+  /** SVG width/height; defaults derived from video size. */
+  width?: number;
+  height?: number;
+  /** Board background color (PCB). */
+  boardColor?: string;
 }
 
 /**
- * IndCircuitBoard - 电路板信号传输（使用 D3.js 力导向图）
- * 
- * 使用 D3.js 的力导向图算法自动布局电路板组件
- * 
- * 特性：
- * - D3 力导向布局
- * - 自动避免重叠
- * - 信号路径优化
- * - 动态连接动画
- * - PCB 风格渲染
+ * IndCircuitBoard - 电路板信号传输（确定性、帧驱动）
+ * - 不使用 Math.random
+ * - 不使用 SVG SMIL（animateTransform），保证 Remotion 渲染可复现
  */
 export const IndCircuitBoard: React.FC<IndCircuitBoardProps> = ({
   components = [
@@ -62,23 +64,51 @@ export const IndCircuitBoard: React.FC<IndCircuitBoardProps> = ({
   ],
   title = "电路板信号传输",
   showLabels = true,
+  seed,
+  width,
+  height,
+  boardColor,
 }) => {
   const frame = useCurrentFrame();
   const theme = useTheme();
+  const { width: videoW, height: videoH } = useVideoConfig();
 
-  // 使用 D3 力导向图计算布局
+  const seedBase = (seed ?? "IndCircuitBoard").toString();
+
+  const svgW = width ?? Math.min(1080, videoW);
+  const svgH = height ?? Math.min(720, videoH);
+
+  const pcbColor = boardColor ?? "#1a3a1a";
+
+  // Layout regions (relative)
+  const titleY = Math.round(svgH * 0.06);
+  const leftPanelX = Math.round(svgW * 0.05);
+  const leftPanelY = Math.round(svgH * 0.11);
+  const rightPanelW = Math.round(svgW * 0.17);
+  const rightPanelX = svgW - rightPanelW - Math.round(svgW * 0.05);
+  const rightPanelY = leftPanelY;
+
+  const boardX = Math.round(svgW * 0.08);
+  const boardY = Math.round(svgH * 0.15);
+  const boardW = svgW - boardX * 2;
+  const boardH = svgH - boardY - Math.round(svgH * 0.1);
+
   const layout = useMemo(() => {
-    const width = 900;
-    const height = 600;
+    const width = Math.max(200, boardW);
+    const height = Math.max(200, boardH);
 
-    // 创建节点和边
-    const nodes = components.map((comp) => ({
-      id: comp.id,
-      type: comp.type,
-      label: comp.label,
-      x: comp.x ?? width / 2 + (Math.random() - 0.5) * 200,
-      y: comp.y ?? height / 2 + (Math.random() - 0.5) * 200,
-    }));
+    const nodes = components.map((comp, idx) => {
+      const rx = random(`${seedBase}:node:${comp.id}:x`);
+      const ry = random(`${seedBase}:node:${comp.id}:y`);
+      return {
+        id: comp.id,
+        type: comp.type,
+        label: comp.label,
+        x: comp.x ?? width / 2 + (rx - 0.5) * width * 0.6,
+        y: comp.y ?? height / 2 + (ry - 0.5) * height * 0.6,
+        _idx: idx,
+      };
+    });
 
     const links = signals.map((sig) => ({
       source: sig.from,
@@ -86,7 +116,6 @@ export const IndCircuitBoard: React.FC<IndCircuitBoardProps> = ({
       color: sig.color,
     }));
 
-    // 创建力模拟
     const simulation = d3
       .forceSimulation(nodes as any)
       .force(
@@ -94,22 +123,18 @@ export const IndCircuitBoard: React.FC<IndCircuitBoardProps> = ({
         d3
           .forceLink(links)
           .id((d: any) => d.id)
-          .distance(150)
+          .distance(Math.max(110, Math.min(170, Math.min(width, height) * 0.22)))
       )
       .force("charge", d3.forceManyBody().strength(-500))
       .force("center", d3.forceCenter(width / 2, height / 2))
       .force("collision", d3.forceCollide().radius(40))
       .stop();
 
-    // 运行模拟
-    for (let i = 0; i < 300; i++) {
-      simulation.tick();
-    }
+    for (let i = 0; i < 300; i++) simulation.tick();
 
-    return { nodes, links };
-  }, [components, signals]);
+    return { nodes, links, width, height };
+  }, [boardH, boardW, components, seedBase, signals]);
 
-  // 获取组件颜色
   const getComponentColor = (type: string) => {
     switch (type) {
       case "chip":
@@ -125,7 +150,6 @@ export const IndCircuitBoard: React.FC<IndCircuitBoardProps> = ({
     }
   };
 
-  // 获取组件尺寸
   const getComponentSize = (type: string) => {
     switch (type) {
       case "chip":
@@ -141,7 +165,6 @@ export const IndCircuitBoard: React.FC<IndCircuitBoardProps> = ({
     }
   };
 
-  // 渲染组件
   const renderComponent = (node: any) => {
     const size = getComponentSize(node.type);
     const color = getComponentColor(node.type);
@@ -151,7 +174,6 @@ export const IndCircuitBoard: React.FC<IndCircuitBoardProps> = ({
       case "chip":
         return (
           <g key={node.id} transform={`translate(${node.x}, ${node.y})`}>
-            {/* 芯片主体 */}
             <rect
               x={-size.width / 2}
               y={-size.height / 2}
@@ -163,42 +185,31 @@ export const IndCircuitBoard: React.FC<IndCircuitBoardProps> = ({
               rx="4"
               opacity={0.9}
             />
-            
-            {/* 芯片引脚 */}
+
             {Array.from({ length: 8 }).map((_, i) => {
               const side = Math.floor(i / 2);
               const offset = (i % 2) * 20 - 10;
               const positions = [
-                { x: offset, y: -size.height / 2 - 5 }, // 上
-                { x: size.width / 2 + 5, y: offset }, // 右
-                { x: offset, y: size.height / 2 + 5 }, // 下
-                { x: -size.width / 2 - 5, y: offset }, // 左
+                { x: offset, y: -size.height / 2 - 5 },
+                { x: size.width / 2 + 5, y: offset },
+                { x: offset, y: size.height / 2 + 5 },
+                { x: -size.width / 2 - 5, y: offset },
               ];
               const pos = positions[side];
-              return (
-                <rect
-                  key={i}
-                  x={pos.x - 2}
-                  y={pos.y - 2}
-                  width="4"
-                  height="4"
-                  fill="#C0C0C0"
-                />
-              );
+              return <rect key={i} x={pos.x - 2} y={pos.y - 2} width="4" height="4" fill="#C0C0C0" />;
             })}
 
-            {/* 芯片标签 */}
             <text
               y="5"
               fill={theme.colors.background}
               fontSize="12"
               fontWeight="bold"
               textAnchor="middle"
+              fontFamily={theme.fonts.mono}
             >
               {node.label}
             </text>
 
-            {/* 发光效果 */}
             <circle
               r={size.width / 2 + 5}
               fill="none"
@@ -212,7 +223,6 @@ export const IndCircuitBoard: React.FC<IndCircuitBoardProps> = ({
       case "resistor":
         return (
           <g key={node.id} transform={`translate(${node.x}, ${node.y})`}>
-            {/* 电阻主体 */}
             <rect
               x={-size.width / 2}
               y={-size.height / 2}
@@ -223,8 +233,7 @@ export const IndCircuitBoard: React.FC<IndCircuitBoardProps> = ({
               strokeWidth="2"
               rx="2"
             />
-            
-            {/* 色环 */}
+
             {[0.3, 0.5, 0.7].map((pos, i) => (
               <line
                 key={i}
@@ -237,31 +246,11 @@ export const IndCircuitBoard: React.FC<IndCircuitBoardProps> = ({
               />
             ))}
 
-            {/* 引脚 */}
-            <line
-              x1={-size.width / 2 - 10}
-              y1="0"
-              x2={-size.width / 2}
-              y2="0"
-              stroke="#C0C0C0"
-              strokeWidth="2"
-            />
-            <line
-              x1={size.width / 2}
-              y1="0"
-              x2={size.width / 2 + 10}
-              y2="0"
-              stroke="#C0C0C0"
-              strokeWidth="2"
-            />
+            <line x1={-size.width / 2 - 10} y1="0" x2={-size.width / 2} y2="0" stroke="#C0C0C0" strokeWidth="2" />
+            <line x1={size.width / 2} y1="0" x2={size.width / 2 + 10} y2="0" stroke="#C0C0C0" strokeWidth="2" />
 
             {showLabels && (
-              <text
-                y={size.height / 2 + 15}
-                fill={theme.colors.text}
-                fontSize="10"
-                textAnchor="middle"
-              >
+              <text y={size.height / 2 + 15} fill={theme.colors.text} fontSize="10" textAnchor="middle" fontFamily={theme.fonts.mono}>
                 {node.label}
               </text>
             )}
@@ -271,152 +260,68 @@ export const IndCircuitBoard: React.FC<IndCircuitBoardProps> = ({
       case "capacitor":
         return (
           <g key={node.id} transform={`translate(${node.x}, ${node.y})`}>
-            {/* 电容极板 */}
-            <line
-              x1="-2"
-              y1={-size.height / 2}
-              x2="-2"
-              y2={size.height / 2}
-              stroke={color}
-              strokeWidth="4"
-            />
-            <line
-              x1="2"
-              y1={-size.height / 2}
-              x2="2"
-              y2={size.height / 2}
-              stroke={color}
-              strokeWidth="4"
-            />
+            <line x1="-2" y1={-size.height / 2} x2="-2" y2={size.height / 2} stroke={color} strokeWidth="4" />
+            <line x1="2" y1={-size.height / 2} x2="2" y2={size.height / 2} stroke={color} strokeWidth="4" />
 
-            {/* 引脚 */}
-            <line
-              x1="-2"
-              y1={-size.height / 2 - 10}
-              x2="-2"
-              y2={-size.height / 2}
-              stroke="#C0C0C0"
-              strokeWidth="2"
-            />
-            <line
-              x1="2"
-              y1={size.height / 2}
-              x2="2"
-              y2={size.height / 2 + 10}
-              stroke="#C0C0C0"
-              strokeWidth="2"
-            />
+            <line x1="-2" y1={-size.height / 2 - 10} x2="-2" y2={-size.height / 2} stroke="#C0C0C0" strokeWidth="2" />
+            <line x1="2" y1={size.height / 2} x2="2" y2={size.height / 2 + 10} stroke="#C0C0C0" strokeWidth="2" />
 
-            {/* 极性标记 */}
-            <text
-              x="-10"
-              y="-5"
-              fill={theme.colors.text}
-              fontSize="14"
-              fontWeight="bold"
-            >
+            <text x="-10" y="-5" fill={theme.colors.text} fontSize="14" fontWeight="bold" fontFamily={theme.fonts.mono}>
               +
             </text>
 
             {showLabels && (
-              <text
-                y={size.height / 2 + 25}
-                fill={theme.colors.text}
-                fontSize="10"
-                textAnchor="middle"
-              >
+              <text y={size.height / 2 + 25} fill={theme.colors.text} fontSize="10" textAnchor="middle" fontFamily={theme.fonts.mono}>
                 {node.label}
               </text>
             )}
           </g>
         );
 
-      case "led":
+      case "led": {
+        const ledOpacity = 0.8 + Math.sin(frame * 0.2 + node.id.length) * 0.2;
         return (
           <g key={node.id} transform={`translate(${node.x}, ${node.y})`}>
-            {/* LED 主体 */}
-            <circle
-              r={size.width / 2}
-              fill={color}
-              stroke={theme.colors.text}
-              strokeWidth="2"
-              opacity={0.8 + Math.sin(frame * 0.2) * 0.2}
-            />
+            <circle r={size.width / 2} fill={color} stroke={theme.colors.text} strokeWidth="2" opacity={ledOpacity} />
 
-            {/* 发光效果 */}
-            <circle
-              r={size.width / 2 + 5}
-              fill="none"
-              stroke={color}
-              strokeWidth="2"
-              opacity={0.5 * pulse}
-            />
-            <circle
-              r={size.width / 2 + 10}
-              fill="none"
-              stroke={color}
-              strokeWidth="1"
-              opacity={0.3 * pulse}
-            />
+            <circle r={size.width / 2 + 5} fill="none" stroke={color} strokeWidth="2" opacity={0.5 * pulse} />
+            <circle r={size.width / 2 + 10} fill="none" stroke={color} strokeWidth="1" opacity={0.3 * pulse} />
 
-            {/* 引脚 */}
-            <line
-              x1="0"
-              y1={size.height / 2}
-              x2="0"
-              y2={size.height / 2 + 10}
-              stroke="#C0C0C0"
-              strokeWidth="2"
-            />
-            <line
-              x1="0"
-              y1={-size.height / 2}
-              x2="0"
-              y2={-size.height / 2 - 10}
-              stroke="#C0C0C0"
-              strokeWidth="2"
-            />
+            <line x1="0" y1={size.height / 2} x2="0" y2={size.height / 2 + 10} stroke="#C0C0C0" strokeWidth="2" />
+            <line x1="0" y1={-size.height / 2} x2="0" y2={-size.height / 2 - 10} stroke="#C0C0C0" strokeWidth="2" />
 
             {showLabels && (
-              <text
-                y={size.height / 2 + 25}
-                fill={theme.colors.text}
-                fontSize="10"
-                textAnchor="middle"
-              >
+              <text y={size.height / 2 + 25} fill={theme.colors.text} fontSize="10" textAnchor="middle" fontFamily={theme.fonts.mono}>
                 {node.label}
               </text>
             )}
           </g>
         );
+      }
 
       default:
         return null;
     }
   };
 
-  // 渲染信号传输
   const renderSignals = () => {
-    return layout.links.map((link: any, index) => {
-      const source = layout.nodes.find((n) => n.id === link.source.id || n.id === link.source);
-      const target = layout.nodes.find((n) => n.id === link.target.id || n.id === link.target);
+    return layout.links.map((link: any, index: number) => {
+      const source = layout.nodes.find((n: any) => n.id === link.source.id || n.id === link.source);
+      const target = layout.nodes.find((n: any) => n.id === link.target.id || n.id === link.target);
 
       if (!source || !target) return null;
 
-      // 使用 D3 生成平滑曲线
       const lineGenerator = d3.line().curve(d3.curveBasis);
-      
-      // 计算控制点
+
       const dx = target.x - source.x;
       const dy = target.y - source.y;
       const dr = Math.sqrt(dx * dx + dy * dy);
-      
+
       const midX = (source.x + target.x) / 2;
       const midY = (source.y + target.y) / 2;
-      
-      // 添加一些随机性使路径更自然
-      const offsetX = (Math.random() - 0.5) * 50;
-      const offsetY = (Math.random() - 0.5) * 50;
+
+      const offsetX = (random(`${seedBase}:path:${source.id}:${target.id}:x`) - 0.5) * 50;
+      const offsetY = (random(`${seedBase}:path:${source.id}:${target.id}:y`) - 0.5) * 50;
 
       const pathData = lineGenerator([
         [source.x, source.y],
@@ -424,38 +329,21 @@ export const IndCircuitBoard: React.FC<IndCircuitBoardProps> = ({
         [target.x, target.y],
       ] as any);
 
-      // 信号动画进度
       const progress = ((frame * 2 + index * 10) % 100) / 100;
       const signalColor = link.color || theme.colors.accent;
 
+      const cx = source.x + (target.x - source.x) * progress;
+      const cy = source.y + (target.y - source.y) * progress;
+      const pulse = 1 + Math.sin((frame + index * 11) / 6) * 0.25;
+
       return (
         <g key={`signal-${index}`}>
-          {/* PCB 走线 */}
-          <path
-            d={pathData || ""}
-            fill="none"
-            stroke="#CD7F32"
-            strokeWidth="3"
-            opacity="0.6"
-          />
+          <path d={pathData || ""} fill="none" stroke="#CD7F32" strokeWidth="3" opacity="0.6" />
 
-          {/* 信号脉冲 */}
-          <circle
-            cx={source.x + (target.x - source.x) * progress}
-            cy={source.y + (target.y - source.y) * progress}
-            r="4"
-            fill={signalColor}
-          >
-            <animateTransform
-              attributeName="transform"
-              type="scale"
-              values="1;1.5;1"
-              dur="1s"
-              repeatCount="indefinite"
-            />
-          </circle>
+          <g transform={`translate(${cx}, ${cy}) scale(${pulse}) translate(${-cx}, ${-cy})`}>
+            <circle cx={cx} cy={cy} r="4" fill={signalColor} />
+          </g>
 
-          {/* 信号轨迹 */}
           <path
             d={pathData || ""}
             fill="none"
@@ -474,78 +362,59 @@ export const IndCircuitBoard: React.FC<IndCircuitBoardProps> = ({
       style={{
         width: "100%",
         height: "100%",
-        backgroundColor: "#1a3a1a",
+        backgroundColor: pcbColor,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         position: "relative",
       }}
     >
-      <svg width="1080" height="720" style={{ overflow: "visible" }}>
-        {/* PCB 背景 */}
-        <rect width="1080" height="720" fill="#1a3a1a" />
-        
-        {/* PCB 纹理 */}
+      <svg width={svgW} height={svgH} style={{ overflow: "visible" }}>
+        <rect width={svgW} height={svgH} fill={pcbColor} />
+
         <defs>
-          <pattern
-            id="pcb-pattern"
-            width="20"
-            height="20"
-            patternUnits="userSpaceOnUse"
-          >
+          <pattern id="pcb-pattern" width="20" height="20" patternUnits="userSpaceOnUse">
             <circle cx="10" cy="10" r="0.5" fill="#2a4a2a" />
           </pattern>
         </defs>
-        <rect width="1080" height="720" fill="url(#pcb-pattern)" opacity="0.3" />
+        <rect width={svgW} height={svgH} fill="url(#pcb-pattern)" opacity="0.3" />
 
-        {/* 标题 */}
         <text
-          x="540"
-          y="40"
+          x={svgW / 2}
+          y={titleY}
           fill="#FFD700"
-          fontSize="32"
+          fontSize={Math.round(svgH * 0.045)}
           fontWeight="bold"
           textAnchor="middle"
+          fontFamily={theme.fonts.heading}
         >
           {title}
         </text>
 
-        {/* 信息面板 */}
-        <g transform="translate(50, 80)">
-          <rect
-            width="220"
-            height="120"
-            fill={theme.colors.surface}
-            opacity="0.9"
-            rx="8"
-          />
-          <text x="15" y="30" fill={theme.colors.text} fontSize="16" fontWeight="bold">
+        <g transform={`translate(${leftPanelX}, ${leftPanelY})`}>
+          <rect width={Math.round(svgW * 0.22)} height={Math.round(svgH * 0.18)} fill={theme.colors.surface} opacity="0.9" rx="8" />
+          <text x="15" y="30" fill={theme.colors.text} fontSize="16" fontWeight="bold" fontFamily={theme.fonts.body}>
             电路参数
           </text>
-          <text x="15" y="55" fill={theme.colors.text} fontSize="14">
+          <text x="15" y="55" fill={theme.colors.text} fontSize="14" fontFamily={theme.fonts.body}>
             组件数: {layout.nodes.length}
           </text>
-          <text x="15" y="75" fill={theme.colors.text} fontSize="14">
+          <text x="15" y="75" fill={theme.colors.text} fontSize="14" fontFamily={theme.fonts.body}>
             连接数: {layout.links.length}
           </text>
-          <text x="15" y="95" fill={theme.colors.text} fontSize="14">
+          <text x="15" y="95" fill={theme.colors.text} fontSize="14" fontFamily={theme.fonts.body}>
             布局算法: D3 Force
           </text>
         </g>
 
-        {/* 主视图 */}
-        <g transform="translate(90, 110)">
-          {/* 渲染连接线 */}
+        <g transform={`translate(${boardX}, ${boardY})`}>
           {renderSignals()}
-
-          {/* 渲染组件 */}
           {layout.nodes.map(renderComponent)}
         </g>
 
-        {/* 图例 */}
-        <g transform="translate(850, 80)">
-          <rect width="180" height="140" fill={theme.colors.surface} opacity="0.9" rx="8" />
-          <text x="15" y="25" fill={theme.colors.text} fontSize="14" fontWeight="bold">
+        <g transform={`translate(${rightPanelX}, ${rightPanelY})`}>
+          <rect width={rightPanelW} height={Math.round(svgH * 0.2)} fill={theme.colors.surface} opacity="0.9" rx="8" />
+          <text x="15" y="25" fill={theme.colors.text} fontSize="14" fontWeight="bold" fontFamily={theme.fonts.body}>
             组件类型
           </text>
           {[
@@ -556,7 +425,7 @@ export const IndCircuitBoard: React.FC<IndCircuitBoardProps> = ({
           ].map((item, i) => (
             <g key={i} transform={`translate(15, ${45 + i * 22})`}>
               <rect width="20" height="15" fill={item.color} rx="2" />
-              <text x="25" y="12" fill={theme.colors.text} fontSize="12">
+              <text x="25" y="12" fill={theme.colors.text} fontSize="12" fontFamily={theme.fonts.body}>
                 {item.label}
               </text>
             </g>

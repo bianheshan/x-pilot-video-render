@@ -1,6 +1,8 @@
-import React, { useMemo, useRef } from "react";
-import { useCurrentFrame, interpolate } from "remotion";
+import React, { useMemo } from "react";
+import { interpolate, random, useCurrentFrame } from "remotion";
 import { useTheme } from "../../contexts/ThemeContext";
+
+type Seed = string | number;
 
 export interface Ball {
   id: number;
@@ -24,150 +26,191 @@ export interface PhysCollisionColliderProps {
   containerHeight?: number;
   /** 是否显示速度矢量 */
   showVelocity?: boolean;
-  /** 温度（影响速度） */
+  /** 温度系数（影响初始速度强度；为“相对量”，不是绝对温度单位 K） */
   temperature?: number;
+  /** 仿真长度（帧）。为了性能与可复现性，组件会预计算 0..durationInFrames-1 的状态。 */
+  durationInFrames?: number;
+  /** 是否循环播放仿真 */
+  loop?: boolean;
+  /** Deterministic seed (avoid Math.random). */
+  seed?: Seed;
 }
 
+const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
+
+const cloneBalls = (balls: Ball[]): Ball[] => balls.map((b) => ({ ...b }));
+
+const cellKey = (cx: number, cy: number) => `${cx},${cy}`;
+
 /**
- * 多体碰撞实验
- * 
- * 模拟大量小球在容器内随机碰撞，展示气体分子运动论
- * 
- * 物理原理：
- * - 动量守恒：m₁v₁ + m₂v₂ = m₁v₁' + m₂v₂'
- * - 能量守恒（弹性碰撞）
- * - 气体分子运动论
- * - 麦克斯韦速度分布
- * 
- * 教学要点：
- * - 微观粒子的随机运动
- * - 宏观温度与微观动能的关系
- * - 压强的微观解释
+ * 多体碰撞实验（帧驱动、可复现）
+ *
+ * 设计目标：
+ * - Remotion 渲染确定性：不使用 Math.random
+ * - 性能：预计算有限帧数，并用空间哈希降低碰撞检测开销
+ * - 准确性：数值模型是“简化弹性碰撞示意”，展示概念而非绝对单位
  */
 export const PhysCollisionCollider: React.FC<PhysCollisionColliderProps> = ({
-  title = "多体碰撞 - 气体分子模拟",
+  title = "多体碰撞（示意）",
   ballCount = 50,
   containerWidth = 800,
   containerHeight = 600,
   showVelocity = false,
   temperature = 1.0,
+  durationInFrames = 300,
+  loop = true,
+  seed,
 }) => {
   const frame = useCurrentFrame();
   const theme = useTheme();
 
-  // 初始化小球
+  const durationFrames = Math.max(1, Math.floor(durationInFrames));
+  const simFrame = loop ? frame % durationFrames : Math.min(frame, durationFrames - 1);
+  const seedBase = (seed ?? "PhysCollisionCollider").toString();
+
   const initialBalls = useMemo(() => {
     const balls: Ball[] = [];
+
+    const radius = 8;
+    const margin = radius + 2;
+
     for (let i = 0; i < ballCount; i++) {
+      const rx = random(`${seedBase}:x:${i}`);
+      const ry = random(`${seedBase}:y:${i}`);
+      const rDir = random(`${seedBase}:dir:${i}`) * Math.PI * 2;
+      const rSpeed = 4 + random(`${seedBase}:speed:${i}`) * 6;
+
+      const speed = rSpeed * clamp(temperature, 0, 10);
+
+      const hue = Math.floor(random(`${seedBase}:hue:${i}`) * 360);
+
       balls.push({
         id: i,
-        x: Math.random() * (containerWidth - 40) + 20,
-        y: Math.random() * (containerHeight - 40) + 20,
-        vx: (Math.random() - 0.5) * 10 * temperature,
-        vy: (Math.random() - 0.5) * 10 * temperature,
-        radius: 8,
-        color: `hsl(${Math.random() * 360}, 70%, 60%)`,
+        x: margin + rx * (containerWidth - margin * 2),
+        y: margin + ry * (containerHeight - margin * 2),
+        vx: Math.cos(rDir) * speed,
+        vy: Math.sin(rDir) * speed,
+        radius,
+        color: `hsl(${hue}, 70%, 60%)`,
         mass: 1,
       });
     }
+
     return balls;
-  }, [ballCount, containerWidth, containerHeight, temperature]);
+  }, [ballCount, containerHeight, containerWidth, seedBase, temperature]);
 
-  // 物理模拟
-  const balls = useMemo(() => {
-    const dt = 0.5; // 时间步长
-    const currentBalls = JSON.parse(JSON.stringify(initialBalls)) as Ball[];
+  const precomputed = useMemo(() => {
+    const dt = 0.5;
+    const balls = cloneBalls(initialBalls);
+    const out: Ball[][] = [];
 
-    // 模拟到当前帧
-    for (let step = 0; step < frame; step++) {
-      // 更新位置
-      currentBalls.forEach((ball) => {
-        ball.x += ball.vx * dt;
-        ball.y += ball.vy * dt;
+    // Cell size ~ diameter for coarse spatial hashing.
+    const cellSize = Math.max(16, balls[0]?.radius ? balls[0].radius * 2 + 4 : 20);
 
-        // 墙壁碰撞
-        if (ball.x - ball.radius < 0) {
-          ball.x = ball.radius;
-          ball.vx = Math.abs(ball.vx);
+    for (let step = 0; step < durationFrames; step++) {
+      // Integrate
+      for (const b of balls) {
+        b.x += b.vx * dt;
+        b.y += b.vy * dt;
+
+        // Wall collisions (elastic)
+        if (b.x - b.radius < 0) {
+          b.x = b.radius;
+          b.vx = Math.abs(b.vx);
         }
-        if (ball.x + ball.radius > containerWidth) {
-          ball.x = containerWidth - ball.radius;
-          ball.vx = -Math.abs(ball.vx);
+        if (b.x + b.radius > containerWidth) {
+          b.x = containerWidth - b.radius;
+          b.vx = -Math.abs(b.vx);
         }
-        if (ball.y - ball.radius < 0) {
-          ball.y = ball.radius;
-          ball.vy = Math.abs(ball.vy);
+        if (b.y - b.radius < 0) {
+          b.y = b.radius;
+          b.vy = Math.abs(b.vy);
         }
-        if (ball.y + ball.radius > containerHeight) {
-          ball.y = containerHeight - ball.radius;
-          ball.vy = -Math.abs(ball.vy);
+        if (b.y + b.radius > containerHeight) {
+          b.y = containerHeight - b.radius;
+          b.vy = -Math.abs(b.vy);
         }
-      });
+      }
 
-      // 球球碰撞检测
-      for (let i = 0; i < currentBalls.length; i++) {
-        for (let j = i + 1; j < currentBalls.length; j++) {
-          const ball1 = currentBalls[i];
-          const ball2 = currentBalls[j];
+      // Spatial hash
+      const grid = new Map<string, number[]>();
+      for (let i = 0; i < balls.length; i++) {
+        const b = balls[i];
+        const cx = Math.floor(b.x / cellSize);
+        const cy = Math.floor(b.y / cellSize);
+        const key = cellKey(cx, cy);
+        const arr = grid.get(key);
+        if (arr) arr.push(i);
+        else grid.set(key, [i]);
+      }
 
-          const dx = ball2.x - ball1.x;
-          const dy = ball2.y - ball1.y;
-          const distance = Math.sqrt(dx * dx + dy * dy);
+      // Collisions (check neighbor cells)
+      for (let i = 0; i < balls.length; i++) {
+        const b1 = balls[i];
+        const cx = Math.floor(b1.x / cellSize);
+        const cy = Math.floor(b1.y / cellSize);
 
-          // 碰撞检测
-          if (distance < ball1.radius + ball2.radius) {
-            // 碰撞响应（弹性碰撞）
-            const nx = dx / distance;
-            const ny = dy / distance;
+        for (let ox = -1; ox <= 1; ox++) {
+          for (let oy = -1; oy <= 1; oy++) {
+            const key = cellKey(cx + ox, cy + oy);
+            const candidates = grid.get(key);
+            if (!candidates) continue;
 
-            // 相对速度
-            const dvx = ball1.vx - ball2.vx;
-            const dvy = ball1.vy - ball2.vy;
+            for (const j of candidates) {
+              if (j <= i) continue;
+              const b2 = balls[j];
 
-            // 法向相对速度
-            const dvn = dvx * nx + dvy * ny;
+              const dx = b2.x - b1.x;
+              const dy = b2.y - b1.y;
+              const dist2 = dx * dx + dy * dy;
+              const minDist = b1.radius + b2.radius;
+              if (dist2 >= minDist * minDist) continue;
 
-            // 如果正在分离，跳过
-            if (dvn > 0) continue;
+              const dist = Math.sqrt(dist2) || 1e-6;
+              const nx = dx / dist;
+              const ny = dy / dist;
 
-            // 冲量
-            const impulse = (2 * dvn) / (ball1.mass + ball2.mass);
+              // Relative velocity
+              const dvx = b1.vx - b2.vx;
+              const dvy = b1.vy - b2.vy;
+              const dvn = dvx * nx + dvy * ny;
+              if (dvn > 0) continue;
 
-            // 更新速度
-            ball1.vx -= impulse * ball2.mass * nx;
-            ball1.vy -= impulse * ball2.mass * ny;
-            ball2.vx += impulse * ball1.mass * nx;
-            ball2.vy += impulse * ball1.mass * ny;
+              // Elastic impulse
+              const impulse = (2 * dvn) / (b1.mass + b2.mass);
+              b1.vx -= impulse * b2.mass * nx;
+              b1.vy -= impulse * b2.mass * ny;
+              b2.vx += impulse * b1.mass * nx;
+              b2.vy += impulse * b1.mass * ny;
 
-            // 分离重叠的球
-            const overlap = ball1.radius + ball2.radius - distance;
-            const separationX = (overlap / 2) * nx;
-            const separationY = (overlap / 2) * ny;
-            ball1.x -= separationX;
-            ball1.y -= separationY;
-            ball2.x += separationX;
-            ball2.y += separationY;
+              // Separate overlap
+              const overlap = minDist - dist;
+              const sepX = (overlap / 2) * nx;
+              const sepY = (overlap / 2) * ny;
+              b1.x -= sepX;
+              b1.y -= sepY;
+              b2.x += sepX;
+              b2.y += sepY;
+            }
           }
         }
       }
+
+      out.push(cloneBalls(balls));
     }
 
-    return currentBalls;
-  }, [frame, initialBalls, containerWidth, containerHeight]);
+    return out;
+  }, [containerHeight, containerWidth, durationFrames, initialBalls]);
 
-  // 计算平均动能（温度）
+  const balls = precomputed[simFrame] ?? initialBalls;
+
   const avgKineticEnergy = useMemo(() => {
-    const totalKE = balls.reduce((sum, ball) => {
-      const speed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
-      return sum + 0.5 * ball.mass * speed * speed;
-    }, 0);
-    return totalKE / balls.length;
+    if (balls.length === 0) return 0;
+    const total = balls.reduce((sum, b) => sum + 0.5 * b.mass * (b.vx * b.vx + b.vy * b.vy), 0);
+    return total / balls.length;
   }, [balls]);
 
-  // 进入动画
-  const opacity = interpolate(frame, [0, 20], [0, 1], {
-    extrapolateRight: "clamp",
-  });
+  const opacity = interpolate(frame, [0, 20], [0, 1], { extrapolateRight: "clamp" });
 
   return (
     <div
@@ -184,11 +227,10 @@ export const PhysCollisionCollider: React.FC<PhysCollisionColliderProps> = ({
         opacity,
       }}
     >
-      {/* 标题 */}
       <h2
         style={{
           fontSize: 42,
-          fontWeight: "bold",
+          fontWeight: 800,
           color: theme.colors.text,
           marginBottom: 20,
           fontFamily: theme.fonts.heading,
@@ -197,7 +239,6 @@ export const PhysCollisionCollider: React.FC<PhysCollisionColliderProps> = ({
         {title}
       </h2>
 
-      {/* 容器 */}
       <div
         style={{
           position: "relative",
@@ -210,28 +251,23 @@ export const PhysCollisionCollider: React.FC<PhysCollisionColliderProps> = ({
         }}
       >
         <svg width={containerWidth} height={containerHeight}>
-          {/* 绘制小球 */}
-          {balls.map((ball) => (
-            <g key={ball.id}>
-              {/* 小球 */}
+          {balls.map((b) => (
+            <g key={b.id}>
               <circle
-                cx={ball.x}
-                cy={ball.y}
-                r={ball.radius}
-                fill={ball.color}
-                style={{
-                  filter: `drop-shadow(0 0 4px ${ball.color})`,
-                }}
+                cx={b.x}
+                cy={b.y}
+                r={b.radius}
+                fill={b.color}
+                style={{ filter: `drop-shadow(0 0 4px ${b.color})` }}
               />
 
-              {/* 速度矢量 */}
               {showVelocity && (
                 <line
-                  x1={ball.x}
-                  y1={ball.y}
-                  x2={ball.x + ball.vx * 3}
-                  y2={ball.y + ball.vy * 3}
-                  stroke={ball.color}
+                  x1={b.x}
+                  y1={b.y}
+                  x2={b.x + b.vx * 3}
+                  y2={b.y + b.vy * 3}
+                  stroke={b.color}
                   strokeWidth={2}
                   opacity={0.6}
                   markerEnd="url(#arrowhead)"
@@ -240,17 +276,9 @@ export const PhysCollisionCollider: React.FC<PhysCollisionColliderProps> = ({
             </g>
           ))}
 
-          {/* 箭头标记 */}
           {showVelocity && (
             <defs>
-              <marker
-                id="arrowhead"
-                markerWidth="6"
-                markerHeight="6"
-                refX="5"
-                refY="3"
-                orient="auto"
-              >
+              <marker id="arrowhead" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
                 <polygon points="0 0, 6 3, 0 6" fill={theme.colors.primary} />
               </marker>
             </defs>
@@ -258,7 +286,6 @@ export const PhysCollisionCollider: React.FC<PhysCollisionColliderProps> = ({
         </svg>
       </div>
 
-      {/* 统计信息 */}
       <div
         style={{
           marginTop: 20,
@@ -268,21 +295,21 @@ export const PhysCollisionCollider: React.FC<PhysCollisionColliderProps> = ({
           color: theme.colors.text,
         }}
       >
-        <div>🔵 粒子数: {ballCount}</div>
-        <div>🌡️ 平均动能: {avgKineticEnergy.toFixed(2)} J</div>
-        <div>⚡ 温度: {temperature.toFixed(1)} K</div>
+        <div>粒子数: {ballCount}</div>
+        <div>平均动能(相对): {avgKineticEnergy.toFixed(2)}</div>
+        <div>温度系数: {temperature.toFixed(2)}</div>
       </div>
 
-      {/* 说明 */}
       <div
         style={{
           marginTop: 15,
           fontSize: 16,
           color: theme.colors.textSecondary,
           textAlign: "center",
+          maxWidth: 1000,
         }}
       >
-        💡 气体分子的无规则运动，宏观温度是微观动能的统计平均
+        提示：该模型用于演示“随机运动与碰撞”概念；数值为相对量，非严格物理单位。
       </div>
     </div>
   );

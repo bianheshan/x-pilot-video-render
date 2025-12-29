@@ -192,17 +192,10 @@ export const IndSmartCity: React.FC<IndSmartCityProps> = ({
           <circle
             cx={building.x + building.width / 2}
             cy={building.y - currentHeight - 5}
-            r="4"
+            r={4 + (0.5 + 0.5 * Math.sin(frame * 0.1 + index)) * 2}
             fill={theme.colors.accent}
             opacity={0.6 + Math.sin(frame * 0.1 + index) * 0.4}
-          >
-            <animate
-              attributeName="r"
-              values="4;6;4"
-              dur="2s"
-              repeatCount="indefinite"
-            />
-          </circle>
+          />
         )}
 
         {/* 建筑标签 */}

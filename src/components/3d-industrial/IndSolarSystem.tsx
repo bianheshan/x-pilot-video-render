@@ -1,5 +1,5 @@
 import React from "react";
-import { useCurrentFrame, interpolate, random } from "remotion";
+import { useCurrentFrame, interpolate, random, useVideoConfig } from "remotion";
 import { useTheme } from "../../contexts/ThemeContext";
 
 export interface Planet {
@@ -65,6 +65,7 @@ export const IndSolarSystem: React.FC<IndSolarSystemProps> = ({
 }) => {
   const frame = useCurrentFrame();
   const theme = useTheme();
+  const { fps } = useVideoConfig();
 
   // 太阳中心
   const centerX = 540;
@@ -201,7 +202,10 @@ export const IndSolarSystem: React.FC<IndSolarSystemProps> = ({
           const starR = random(`star-r-${i}`) * 1.5;
           const starOpacity = random(`star-opacity-${i}`) * 0.8 + 0.2;
           const starDur = random(`star-dur-${i}`) * 3 + 2;
-          
+          const starPhase = random(`star-phase-${i}`) * Math.PI * 2;
+
+          const twinkle = 0.75 + 0.25 * Math.sin((frame / fps) * ((2 * Math.PI) / starDur) + starPhase);
+
           return (
             <circle
               key={`star-${i}`}
@@ -209,15 +213,8 @@ export const IndSolarSystem: React.FC<IndSolarSystemProps> = ({
               cy={starY}
               r={starR}
               fill="#FFFFFF"
-              opacity={starOpacity}
-            >
-              <animate
-                attributeName="opacity"
-                values={`${starOpacity};${starOpacity * 0.5};${starOpacity}`}
-                dur={`${starDur}s`}
-                repeatCount="indefinite"
-              />
-            </circle>
+              opacity={starOpacity * twinkle}
+            />
           );
         })}
 

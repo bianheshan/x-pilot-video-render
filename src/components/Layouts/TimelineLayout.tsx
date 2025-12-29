@@ -1,5 +1,5 @@
 import React from "react";
-import { AbsoluteFill, useCurrentFrame, interpolate, spring, useVideoConfig } from "remotion";
+import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
 
 export type TimelineItem = {
   content: React.ReactNode;
@@ -7,10 +7,11 @@ export type TimelineItem = {
   timestamp?: string;
   side?: "left" | "right" | "auto";
   icon?: React.ReactNode;
+  /** Delay for this item (frames). */
   delay?: number;
 };
 
-interface TimelineLayoutProps {
+export interface TimelineLayoutProps {
   items: TimelineItem[];
   orientation?: "vertical" | "horizontal";
   lineColor?: string;
@@ -20,13 +21,15 @@ interface TimelineLayoutProps {
   spacing?: number;
   padding?: number;
   backgroundColor?: string;
+  /** Base stagger delay (frames) used when item.delay is not provided. */
   staggerDelay?: number;
   autoAlternate?: boolean;
 }
 
 /**
  * 时间轴布局组件 - 展示时间序列或流程步骤
- * 支持垂直/水平方向、左右交替、自定义图标
+ * - 所有动效为帧驱动（避免 CSS transition）
+ * - 支持 item.delay（帧）与全局 staggerDelay 叠加
  */
 export const TimelineLayout: React.FC<TimelineLayoutProps> = ({
   items,
@@ -46,43 +49,43 @@ export const TimelineLayout: React.FC<TimelineLayoutProps> = ({
 
   const isVertical = orientation === "vertical";
 
-  const getItemAnimation = (index: number) => {
-    const delay = index * staggerDelay;
-    const startFrame = delay;
+  const getStartFrame = (item: TimelineItem, index: number) => {
+    const perItemDelay = Math.max(0, Math.floor(item.delay ?? 0));
+    return perItemDelay + index * staggerDelay;
+  };
+
+  const getItemAnimation = (item: TimelineItem, index: number) => {
+    const startFrame = getStartFrame(item, index);
 
     const progress = spring({
       frame: frame - startFrame,
       fps,
-      config: {
-        damping: 15,
-        stiffness: 100,
-        mass: 0.8,
-      },
+      config: { damping: 15, stiffness: 100, mass: 0.8 },
     });
 
     const opacity = interpolate(frame, [startFrame, startFrame + 15], [0, 1], {
       extrapolateRight: "clamp",
     });
 
-    const slideDistance = isVertical ? 50 : 50;
+    const slideDistance = 50;
     const slide = (1 - progress) * slideDistance;
 
     return {
       opacity,
       transform: isVertical ? `translateY(${slide}px)` : `translateX(${slide}px)`,
       scale: progress,
+      startFrame,
     };
   };
 
-  // 时间线进度动画
-  const lineProgress = interpolate(
-    frame,
-    [0, items.length * staggerDelay + 30],
-    [0, 100],
-    {
-      extrapolateRight: "clamp",
-    }
-  );
+  const lastEndFrame = items.reduce((max, item, idx) => {
+    const start = getStartFrame(item, idx);
+    return Math.max(max, start + 45);
+  }, 1);
+
+  const lineProgress = interpolate(frame, [0, lastEndFrame], [0, 100], {
+    extrapolateRight: "clamp",
+  });
 
   return (
     <AbsoluteFill style={{ backgroundColor, padding }}>
@@ -98,7 +101,6 @@ export const TimelineLayout: React.FC<TimelineLayoutProps> = ({
           gap: spacing,
         }}
       >
-        {/* 时间线主线 */}
         <div
           style={{
             position: "absolute",
@@ -107,12 +109,9 @@ export const TimelineLayout: React.FC<TimelineLayoutProps> = ({
             [isVertical ? "width" : "height"]: lineWidth,
             [isVertical ? "height" : "width"]: "100%",
             backgroundColor: lineColor,
-            transform: isVertical
-              ? "translateX(-50%)"
-              : "translateY(-50%)",
+            transform: isVertical ? "translateX(-50%)" : "translateY(-50%)",
           }}
         >
-          {/* 进度指示器 */}
           <div
             style={{
               position: "absolute",
@@ -121,17 +120,14 @@ export const TimelineLayout: React.FC<TimelineLayoutProps> = ({
               [isVertical ? "width" : "height"]: "100%",
               [isVertical ? "height" : "width"]: `${lineProgress}%`,
               backgroundColor: dotColor,
-              transition: "all 0.3s ease",
             }}
           />
         </div>
 
-        {/* 时间轴项目 */}
         {items.map((item, index) => {
-          const animation = getItemAnimation(index);
+          const animation = getItemAnimation(item, index);
           const side =
-            item.side ||
-            (autoAlternate ? (index % 2 === 0 ? "left" : "right") : "right");
+            item.side || (autoAlternate ? (index % 2 === 0 ? "left" : "right") : "right");
 
           const isLeft = side === "left";
 
@@ -147,7 +143,6 @@ export const TimelineLayout: React.FC<TimelineLayoutProps> = ({
                 opacity: animation.opacity,
               }}
             >
-              {/* 内容区域 */}
               <div
                 style={{
                   display: "flex",
@@ -157,7 +152,6 @@ export const TimelineLayout: React.FC<TimelineLayoutProps> = ({
                   gap: 30,
                 }}
               >
-                {/* 左侧/上侧内容 */}
                 {isVertical && (
                   <div
                     style={{
@@ -172,7 +166,6 @@ export const TimelineLayout: React.FC<TimelineLayoutProps> = ({
                   </div>
                 )}
 
-                {/* 时间点 */}
                 <div
                   style={{
                     position: "relative",
@@ -183,7 +176,6 @@ export const TimelineLayout: React.FC<TimelineLayoutProps> = ({
                     gap: 10,
                   }}
                 >
-                  {/* 图标或圆点 */}
                   <div
                     style={{
                       width: dotSize,
@@ -198,12 +190,9 @@ export const TimelineLayout: React.FC<TimelineLayoutProps> = ({
                       boxShadow: `0 0 20px ${dotColor}`,
                     }}
                   >
-                    {item.icon && (
-                      <div style={{ fontSize: dotSize * 0.6 }}>{item.icon}</div>
-                    )}
+                    {item.icon && <div style={{ fontSize: dotSize * 0.6 }}>{item.icon}</div>}
                   </div>
 
-                  {/* 时间戳 */}
                   {item.timestamp && (
                     <div
                       style={{
@@ -217,12 +206,11 @@ export const TimelineLayout: React.FC<TimelineLayoutProps> = ({
                     </div>
                   )}
 
-                  {/* 标签 */}
                   {item.label && (
                     <div
                       style={{
                         fontSize: 14,
-                        fontWeight: "bold",
+                        fontWeight: 700,
                         color: dotColor,
                         whiteSpace: "nowrap",
                         opacity: animation.opacity,
@@ -233,7 +221,6 @@ export const TimelineLayout: React.FC<TimelineLayoutProps> = ({
                   )}
                 </div>
 
-                {/* 右侧/下侧内容 */}
                 {isVertical && (
                   <div
                     style={{
@@ -248,7 +235,6 @@ export const TimelineLayout: React.FC<TimelineLayoutProps> = ({
                   </div>
                 )}
 
-                {/* 水平方向的内容 */}
                 {!isVertical && (
                   <div
                     style={{

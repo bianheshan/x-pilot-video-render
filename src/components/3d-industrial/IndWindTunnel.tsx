@@ -140,17 +140,10 @@ export const IndWindTunnel: React.FC<IndWindTunnelProps> = ({
           key={`particle-${particle.id}`}
           cx={particle.x}
           cy={particle.y}
-          r={isNearCar ? 3 : 2}
+          r={(isNearCar ? 3 : 2) + (isNearCar ? 2 : 1) * (0.5 + 0.5 * Math.sin((frame + particle.id * 7) * 0.2))}
           fill={isNearCar ? theme.colors.accent : theme.colors.primary}
           opacity={isNearCar ? 0.8 : 0.5}
-        >
-          <animate
-            attributeName="r"
-            values={isNearCar ? "3;5;3" : "2;3;2"}
-            dur="1s"
-            repeatCount="indefinite"
-          />
-        </circle>
+        />
       );
     });
   };

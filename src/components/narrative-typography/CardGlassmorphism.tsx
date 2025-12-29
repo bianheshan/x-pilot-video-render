@@ -1,52 +1,49 @@
 import React from "react";
+import type { ReactNode } from "react";
 import { useCurrentFrame, interpolate } from "remotion";
 import { useTheme } from "../../contexts/ThemeContext";
 
 export interface CardGlassmorphismProps {
   title: string;
-  content: string;
-  icon?: string;
+  content: ReactNode;
+  icon?: ReactNode;
   accentColor?: string;
+  /** @deprecated 请改用 accentColor。仍兼容旧字段以避免场景报错 */
+  color?: string;
+  eyebrow?: string;
+  footer?: ReactNode;
+  statLabel?: string;
+  statValue?: string | number;
+  align?: "center" | "left";
+  maxWidth?: number;
 }
 
 /**
- * 毛玻璃卡片
- * 高级模糊背景，边缘高光，极简现代风格
- * 自动使用当前主题的颜色
+ * 毛玻璃卡片 - 高亮核心知识点，支持额外的「眉标题 / 统计 / 页脚」。
  */
 export const CardGlassmorphism: React.FC<CardGlassmorphismProps> = ({
   title,
   content,
   icon = "✨",
   accentColor,
+  color,
+  eyebrow,
+  footer,
+  statLabel,
+  statValue,
+  align = "center",
+  maxWidth = 720,
 }) => {
   const frame = useCurrentFrame();
   const theme = useTheme();
 
-  // 使用主题颜色（如果未提供自定义颜色）
-  const finalAccentColor = accentColor || theme.colors.primary;
+  const finalAccentColor = accentColor || color || theme.colors.primary;
 
-  // 卡片进入动画
-  const cardY = interpolate(frame, [0, 40], [100, 0], {
-    extrapolateRight: "clamp",
-  });
-
-  const cardOpacity = interpolate(frame, [0, 30], [0, 1], {
-    extrapolateRight: "clamp",
-  });
-
-  const cardScale = interpolate(frame, [0, 40], [0.9, 1], {
-    extrapolateRight: "clamp",
-  });
-
-  // 背景光效移动
-  const lightX = interpolate(frame, [0, 200], [0, 100], {
-    extrapolateRight: "extend",
-  });
-
+  const cardY = interpolate(frame, [0, 40], [100, 0], { extrapolateRight: "clamp" });
+  const cardOpacity = interpolate(frame, [0, 30], [0, 1], { extrapolateRight: "clamp" });
+  const cardScale = interpolate(frame, [0, 40], [0.92, 1], { extrapolateRight: "clamp" });
+  const lightX = interpolate(frame, [0, 200], [0, 100], { extrapolateRight: "extend" });
   const lightY = 50 + Math.sin(frame / 30) * 20;
-
-  // 边缘光晕动画
   const glowIntensity = 0.5 + Math.sin(frame / 20) * 0.3;
 
   return (
@@ -60,10 +57,11 @@ export const CardGlassmorphism: React.FC<CardGlassmorphismProps> = ({
         alignItems: "center",
         background: `linear-gradient(135deg, ${theme.colors.background} 0%, ${theme.colors.surface} 100%)`,
         overflow: "hidden",
+        padding: 40,
       }}
     >
-      {/* 动态背景光效 */}
       <div
+        aria-hidden
         style={{
           position: "absolute",
           width: "100%",
@@ -72,193 +70,114 @@ export const CardGlassmorphism: React.FC<CardGlassmorphismProps> = ({
         }}
       />
 
-      {/* 背景装饰圆 */}
-      <div
-        style={{
-          position: "absolute",
-          width: 600,
-          height: 600,
-          borderRadius: "50%",
-          background: "rgba(255,255,255,0.1)",
-          top: -200,
-          right: -200,
-          filter: "blur(60px)",
-        }}
-      />
-
-      <div
-        style={{
-          position: "absolute",
-          width: 400,
-          height: 400,
-          borderRadius: "50%",
-          background: "rgba(255,255,255,0.1)",
-          bottom: -100,
-          left: -100,
-          filter: "blur(60px)",
-        }}
-      />
-
-      {/* 毛玻璃卡片 */}
       <div
         style={{
           position: "relative",
-          width: 700,
+          width: "100%",
+          maxWidth,
           padding: 60,
-          background: "rgba(255, 255, 255, 0.1)",
+          background: "rgba(255, 255, 255, 0.12)",
           backdropFilter: "blur(20px) saturate(180%)",
           WebkitBackdropFilter: "blur(20px) saturate(180%)",
           borderRadius: 30,
           border: "1px solid rgba(255, 255, 255, 0.3)",
-          boxShadow: `
-            0 8px 32px rgba(0, 0, 0, 0.2),
-            inset 0 1px 0 rgba(255, 255, 255, 0.5),
-            0 0 40px ${finalAccentColor}${Math.round(glowIntensity * 0.3 * 255).toString(16).padStart(2, '0')}
-          `,
+          boxShadow: `0 8px 32px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255,255,255,0.5), 0 0 40px ${finalAccentColor}${Math.round(
+            glowIntensity * 0.35 * 255
+          )
+            .toString(16)
+            .padStart(2, "0")}`,
           transform: `translateY(${cardY}px) scale(${cardScale})`,
           opacity: cardOpacity,
+          textAlign: align,
         }}
       >
-        {/* 顶部高光 */}
-        <div
-          style={{
-            position: "absolute",
-            top: 0,
-            left: "10%",
-            width: "80%",
-            height: 2,
-            background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)",
-            borderRadius: "50%",
-            filter: "blur(2px)",
-          }}
-        />
+        {eyebrow && (
+          <div
+            style={{
+              fontSize: 20,
+              letterSpacing: 4,
+              textTransform: "uppercase",
+              marginBottom: 12,
+              color: finalAccentColor,
+            }}
+          >
+            {eyebrow}
+          </div>
+        )}
 
-        {/* 图标 */}
         <div
           style={{
             fontSize: 60,
-            marginBottom: 20,
-            textAlign: "center",
+            marginBottom: 24,
             filter: `drop-shadow(0 0 20px ${finalAccentColor})`,
           }}
         >
           {icon}
         </div>
 
-        {/* 标题 */}
         <h2
           style={{
             fontSize: 48,
             fontWeight: 700,
             color: theme.colors.text,
-            margin: "0 0 30px 0",
-            textAlign: "center",
+            margin: "0 0 24px 0",
             fontFamily: theme.fonts.heading,
-            textShadow: "0 2px 10px rgba(0,0,0,0.3)",
             letterSpacing: 1,
           }}
         >
           {title}
         </h2>
 
-        {/* 分隔线 */}
         <div
+          aria-hidden
           style={{
             width: "100%",
             height: 1,
             background: `linear-gradient(90deg, transparent, ${finalAccentColor}, transparent)`,
-            marginBottom: 30,
+            marginBottom: 24,
             boxShadow: `0 0 10px ${finalAccentColor}`,
           }}
         />
 
-        {/* 内容 */}
-        <p
+        <div
           style={{
             fontSize: 24,
             lineHeight: 1.8,
             color: theme.colors.textSecondary,
-            margin: 0,
-            textAlign: "center",
-            fontFamily: theme.fonts.body,
             textShadow: "0 1px 5px rgba(0,0,0,0.2)",
           }}
         >
-          {content}
-        </p>
-
-        {/* 底部装饰点 */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            gap: 10,
-            marginTop: 40,
-          }}
-        >
-          {[0, 1, 2].map((i) => (
-            <div
-              key={i}
-              style={{
-                width: 8,
-                height: 8,
-                borderRadius: "50%",
-                background: finalAccentColor,
-                opacity: 0.6 + Math.sin(frame / 15 + i) * 0.4,
-                boxShadow: `0 0 10px ${finalAccentColor}`,
-              }}
-            />
-          ))}
+          {typeof content === "string" ? <span>{content}</span> : content}
         </div>
 
-        {/* 边缘光晕效果 */}
-        <div
-          style={{
-            position: "absolute",
-            top: -2,
-            left: -2,
-            right: -2,
-            bottom: -2,
-            borderRadius: 30,
-            background: `linear-gradient(135deg, ${finalAccentColor}44, transparent, ${finalAccentColor}44)`,
-            opacity: glowIntensity,
-            pointerEvents: "none",
-            zIndex: -1,
-          }}
-        />
-      </div>
-
-      {/* 浮动粒子 */}
-      {Array.from({ length: 15 }).map((_, i) => {
-        const particleY = interpolate(
-          (frame + i * 10) % 200,
-          [0, 200],
-          [100, -10]
-        );
-        const particleX = 10 + i * 6 + Math.sin(frame / 20 + i) * 3;
-        const particleOpacity = interpolate(
-          (frame + i * 10) % 200,
-          [0, 50, 150, 200],
-          [0, 0.6, 0.6, 0]
-        );
-
-        return (
+        {(statLabel || statValue) && (
           <div
-            key={i}
             style={{
-              position: "absolute",
-              left: `${particleX}%`,
-              top: `${particleY}%`,
-              width: 4,
-              height: 4,
-              borderRadius: "50%",
-              background: "white",
-              opacity: particleOpacity,
-              boxShadow: "0 0 10px rgba(255,255,255,0.8)",
+              marginTop: 32,
+              display: "inline-flex",
+              alignItems: "baseline",
+              gap: 12,
+              color: finalAccentColor,
             }}
-          />
-        );
-      })}
+          >
+            <span style={{ fontSize: 18, letterSpacing: 2, textTransform: "uppercase" }}>{statLabel}</span>
+            <strong style={{ fontSize: 42 }}>{statValue}</strong>
+          </div>
+        )}
+
+        {footer && (
+          <div
+            style={{
+              marginTop: 36,
+              fontSize: 20,
+              color: theme.colors.text,
+              opacity: 0.8,
+            }}
+          >
+            {footer}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

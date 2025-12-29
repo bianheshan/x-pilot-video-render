@@ -1,11 +1,22 @@
 import React from "react";
+import type { CSSProperties } from "react";
 import { AbsoluteFill, useCurrentFrame, interpolate, spring, useVideoConfig } from "remotion";
+
+type GridItemAnimation =
+  | "fade"
+  | "slide"
+  | "scale"
+  | "spring"
+  | "pop"
+  | "pop-in"
+  | "none";
 
 export type GridItem = {
   content: React.ReactNode;
   span?: { rows?: number; cols?: number };
-  animation?: "fade" | "slide" | "scale" | "spring" | "none";
+  animation?: GridItemAnimation;
   delay?: number;
+  style?: CSSProperties;
 };
 
 interface GridLayoutProps {
@@ -15,30 +26,42 @@ interface GridLayoutProps {
   gap?: number;
   padding?: number;
   backgroundColor?: string;
+  backgroundOverlay?: string;
   staggerDelay?: number;
-  globalAnimation?: "fade" | "slide" | "scale" | "spring" | "none";
+  globalAnimation?: GridItemAnimation;
+  containerStyle?: CSSProperties;
+  itemStyle?: CSSProperties;
+  minRowHeight?: number;
 }
 
 /**
- * 网格布局组件 - 支持多行多列的复杂网格布局
- * 支持单元格跨行跨列、独立动画、交错动画效果
+ * 网格布局组件 - 多用于知识可视化的要点拼贴，可跨行列并支持多种入场动画。
  */
 export const GridLayout: React.FC<GridLayoutProps> = ({
   items,
   columns = 2,
-  rows = 2,
+  rows,
   gap = 20,
   padding = 40,
   backgroundColor = "transparent",
+  backgroundOverlay,
   staggerDelay = 5,
   globalAnimation = "spring",
+  containerStyle,
+  itemStyle,
+  minRowHeight,
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
+  const computedRows = rows ?? Math.max(1, Math.ceil(items.length / columns));
 
-  const getItemAnimation = (index: number, animation?: string) => {
+  const getItemAnimation = (
+    index: number,
+    animation?: GridItemAnimation,
+    itemDelay?: number
+  ) => {
     const animationType = animation || globalAnimation;
-    const delay = index * staggerDelay;
+    const delay = typeof itemDelay === "number" ? itemDelay : index * staggerDelay;
     const startFrame = delay;
 
     if (animationType === "none") {
@@ -49,13 +72,8 @@ export const GridLayout: React.FC<GridLayoutProps> = ({
       const progress = spring({
         frame: frame - startFrame,
         fps,
-        config: {
-          damping: 12,
-          stiffness: 100,
-          mass: 0.5,
-        },
+        config: { damping: 12, stiffness: 100, mass: 0.5 },
       });
-
       return {
         opacity: interpolate(frame, [startFrame, startFrame + 15], [0, 1], {
           extrapolateRight: "clamp",
@@ -64,25 +82,40 @@ export const GridLayout: React.FC<GridLayoutProps> = ({
       };
     }
 
+    if (animationType === "pop" || animationType === "pop-in") {
+      const progress = spring({
+        frame: frame - startFrame,
+        fps,
+        config: { damping: 14, stiffness: 140, mass: 0.4 },
+      });
+      const scale = 0.85 + Math.min(progress, 1) * 0.2;
+      return {
+        opacity: interpolate(frame, [startFrame, startFrame + 10], [0, 1], {
+          extrapolateRight: "clamp",
+        }),
+        transform: `scale(${scale})`,
+      };
+    }
+
     if (animationType === "fade") {
-      const opacity = interpolate(frame, [startFrame, startFrame + 30], [0, 1], {
+      const opacity = interpolate(frame, [startFrame, startFrame + 25], [0, 1], {
         extrapolateRight: "clamp",
       });
       return { opacity, transform: "none" };
     }
 
     if (animationType === "slide") {
-      const slideY = interpolate(frame, [startFrame, startFrame + 30], [50, 0], {
+      const slideY = interpolate(frame, [startFrame, startFrame + 25], [40, 0], {
         extrapolateRight: "clamp",
       });
-      const opacity = interpolate(frame, [startFrame, startFrame + 20], [0, 1], {
+      const opacity = interpolate(frame, [startFrame, startFrame + 15], [0, 1], {
         extrapolateRight: "clamp",
       });
       return { opacity, transform: `translateY(${slideY}px)` };
     }
 
     if (animationType === "scale") {
-      const scale = interpolate(frame, [startFrame, startFrame + 30], [0.5, 1], {
+      const scale = interpolate(frame, [startFrame, startFrame + 30], [0.6, 1], {
         extrapolateRight: "clamp",
       });
       const opacity = interpolate(frame, [startFrame, startFrame + 20], [0, 1], {
@@ -96,18 +129,31 @@ export const GridLayout: React.FC<GridLayoutProps> = ({
 
   return (
     <AbsoluteFill style={{ backgroundColor, padding }}>
+      {backgroundOverlay && (
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: backgroundOverlay,
+            pointerEvents: "none",
+          }}
+        />
+      )}
       <div
         style={{
+          position: "relative",
           display: "grid",
           gridTemplateColumns: `repeat(${columns}, 1fr)`,
-          gridTemplateRows: `repeat(${rows}, 1fr)`,
+          gridTemplateRows: `repeat(${computedRows}, ${minRowHeight ? `${minRowHeight}px` : "1fr"})`,
           gap,
           width: "100%",
           height: "100%",
+          ...containerStyle,
         }}
       >
         {items.map((item, index) => {
-          const animation = getItemAnimation(index, item.animation);
+          const animation = getItemAnimation(index, item.animation, item.delay);
           const rowSpan = item.span?.rows || 1;
           const colSpan = item.span?.cols || 1;
 
@@ -119,7 +165,11 @@ export const GridLayout: React.FC<GridLayoutProps> = ({
                 gridColumn: `span ${colSpan}`,
                 position: "relative",
                 overflow: "hidden",
+                display: "flex",
+                alignItems: "stretch",
                 ...animation,
+                ...itemStyle,
+                ...item.style,
               }}
             >
               {item.content}

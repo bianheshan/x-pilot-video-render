@@ -92,7 +92,6 @@ export const LogicSwotMatrix: React.FC<LogicSwotMatrixProps> = ({
           display: "flex",
           flexDirection: "column",
           transform: `scale(${scale})`,
-          transition: "transform 0.3s ease-out",
         }}
       >
         {/* 象限标题 */}

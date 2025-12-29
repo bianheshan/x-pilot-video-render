@@ -1,6 +1,8 @@
 import React, { useMemo } from "react";
-import { useCurrentFrame, interpolate } from "remotion";
+import { interpolate, random, useCurrentFrame, useVideoConfig } from "remotion";
 import { useTheme } from "../../contexts/ThemeContext";
+
+type Seed = string | number;
 
 export interface Neuron {
   id: number;
@@ -24,85 +26,83 @@ export interface BioNeuronNetworkProps {
   showSignals?: boolean;
   /** 信号传递速度 */
   signalSpeed?: number;
+  /** Deterministic seed (avoid Math.random). */
+  seed?: Seed;
 }
 
 /**
- * 神经网络传导
- * 
- * 展示神经元之间的电信号脉冲传递动画
- * 
- * 生物学原理：
- * - 神经元结构（树突、胞体、轴突）
- * - 动作电位
- * - 突触传递
- * - 神经网络
- * 
- * 教学要点：
- * - 神经信号的传递机制
- * - 突触的作用
- * - 神经网络的信息处理
+ * 神经网络传导（示意）
+ * - 可复现：不使用 Math.random
  */
 export const BioNeuronNetwork: React.FC<BioNeuronNetworkProps> = ({
   title = "神经网络传导 - 信号传递",
   neuronsPerLayer = [3, 5, 4, 2],
   showSignals = true,
   signalSpeed = 1,
+  seed,
 }) => {
   const frame = useCurrentFrame();
   const theme = useTheme();
+  const { width: videoW, height: videoH } = useVideoConfig();
 
-  // 生成神经元位置
+  const seedBase = (seed ?? "BioNeuronNetwork").toString();
+
+  const svgW = Math.min(1200, Math.max(900, videoW - 200));
+  const svgH = Math.min(650, Math.max(520, Math.floor(videoH * 0.62)));
+
   const neurons = useMemo(() => {
     const allNeurons: Neuron[] = [];
     let id = 0;
 
-    const layerSpacing = 1000 / (neuronsPerLayer.length + 1);
+    const layerSpacing = (svgW - 200) / (neuronsPerLayer.length + 1);
 
     neuronsPerLayer.forEach((count, layerIndex) => {
-      const neuronSpacing = 500 / (count + 1);
-      
+      const neuronSpacing = (svgH - 160) / (count + 1);
+
       for (let i = 0; i < count; i++) {
         allNeurons.push({
           id: id++,
-          x: 140 + layerIndex * layerSpacing,
-          y: 100 + (i + 1) * neuronSpacing,
+          x: 100 + (layerIndex + 1) * layerSpacing,
+          y: 80 + (i + 1) * neuronSpacing,
           layer: layerIndex,
         });
       }
     });
 
     return allNeurons;
-  }, [neuronsPerLayer]);
+  }, [neuronsPerLayer, svgH, svgW]);
 
-  // 生成突触连接
+  const neuronById = useMemo(() => {
+    const map = new Map<number, Neuron>();
+    for (const n of neurons) map.set(n.id, n);
+    return map;
+  }, [neurons]);
+
   const synapses = useMemo(() => {
     const allSynapses: Synapse[] = [];
 
     for (let i = 0; i < neurons.length; i++) {
+      const n1 = neurons[i];
       for (let j = 0; j < neurons.length; j++) {
-        const neuron1 = neurons[i];
-        const neuron2 = neurons[j];
-
-        // 只连接相邻层
-        if (neuron2.layer === neuron1.layer + 1) {
+        const n2 = neurons[j];
+        if (n2.layer === n1.layer + 1) {
           allSynapses.push({
-            from: neuron1.id,
-            to: neuron2.id,
-            strength: Math.random() * 0.5 + 0.5,
+            from: n1.id,
+            to: n2.id,
+            strength: random(`${seedBase}:syn:${n1.id}->${n2.id}`) * 0.5 + 0.5,
           });
         }
       }
     }
 
     return allSynapses;
-  }, [neurons]);
+  }, [neurons, seedBase]);
 
-  // 信号传递动画
   const signals = useMemo(() => {
-    if (!showSignals) return [];
+    if (!showSignals) return [] as { synapse: Synapse; progress: number }[];
 
-    const activeSignals = [];
-    const signalDuration = 60 / signalSpeed;
+    const activeSignals: { synapse: Synapse; progress: number }[] = [];
+    const signalDuration = 60 / Math.max(0.1, signalSpeed);
 
     for (let i = 0; i < synapses.length; i++) {
       const synapse = synapses[i];
@@ -117,33 +117,28 @@ export const BioNeuronNetwork: React.FC<BioNeuronNetworkProps> = ({
     return activeSignals;
   }, [frame, synapses, showSignals, signalSpeed]);
 
-  // 神经元激活状态
   const neuronActivation = useMemo(() => {
     const activation = new Map<number, number>();
 
-    neurons.forEach((neuron) => {
-      // 输入层持续激活
+    for (const neuron of neurons) {
       if (neuron.layer === 0) {
         activation.set(neuron.id, 0.8 + 0.2 * Math.sin(frame * 0.1));
-      } else {
-        // 其他层根据信号传递激活
-        let totalActivation = 0;
-        signals.forEach(({ synapse, progress }) => {
-          if (synapse.to === neuron.id && progress > 0.8) {
-            totalActivation += synapse.strength * (1 - (progress - 0.8) * 5);
-          }
-        });
-        activation.set(neuron.id, Math.min(totalActivation, 1));
+        continue;
       }
-    });
+
+      let totalActivation = 0;
+      for (const { synapse, progress } of signals) {
+        if (synapse.to === neuron.id && progress > 0.8) {
+          totalActivation += synapse.strength * (1 - (progress - 0.8) * 5);
+        }
+      }
+      activation.set(neuron.id, Math.min(totalActivation, 1));
+    }
 
     return activation;
   }, [neurons, signals, frame]);
 
-  // 进入动画
-  const opacity = interpolate(frame, [0, 20], [0, 1], {
-    extrapolateRight: "clamp",
-  });
+  const opacity = interpolate(frame, [0, 20], [0, 1], { extrapolateRight: "clamp" });
 
   return (
     <div
@@ -160,11 +155,10 @@ export const BioNeuronNetwork: React.FC<BioNeuronNetworkProps> = ({
         opacity,
       }}
     >
-      {/* 标题 */}
       <h2
         style={{
           fontSize: 42,
-          fontWeight: "bold",
+          fontWeight: 800,
           color: "#00D9FF",
           marginBottom: 30,
           fontFamily: theme.fonts.heading,
@@ -174,17 +168,14 @@ export const BioNeuronNetwork: React.FC<BioNeuronNetworkProps> = ({
         {title}
       </h2>
 
-      {/* 主画布 */}
-      <svg width={1200} height={600} style={{ overflow: "visible" }}>
+      <svg width={svgW} height={svgH} style={{ overflow: "visible" }}>
         <defs>
-          {/* 神经元发光效果 */}
           <radialGradient id="neuronGlow">
             <stop offset="0%" stopColor="#00D9FF" stopOpacity="1" />
             <stop offset="50%" stopColor="#0099CC" stopOpacity="0.6" />
             <stop offset="100%" stopColor="#0099CC" stopOpacity="0" />
           </radialGradient>
 
-          {/* 信号发光 */}
           <filter id="signalGlow">
             <feGaussianBlur stdDeviation="4" result="coloredBlur" />
             <feMerge>
@@ -194,11 +185,9 @@ export const BioNeuronNetwork: React.FC<BioNeuronNetworkProps> = ({
           </filter>
         </defs>
 
-        {/* 绘制突触连接 */}
         {synapses.map((synapse, index) => {
-          const fromNeuron = neurons.find((n) => n.id === synapse.from);
-          const toNeuron = neurons.find((n) => n.id === synapse.to);
-
+          const fromNeuron = neuronById.get(synapse.from);
+          const toNeuron = neuronById.get(synapse.to);
           if (!fromNeuron || !toNeuron) return null;
 
           return (
@@ -215,11 +204,9 @@ export const BioNeuronNetwork: React.FC<BioNeuronNetworkProps> = ({
           );
         })}
 
-        {/* 绘制信号 */}
         {signals.map(({ synapse, progress }, index) => {
-          const fromNeuron = neurons.find((n) => n.id === synapse.from);
-          const toNeuron = neurons.find((n) => n.id === synapse.to);
-
+          const fromNeuron = neuronById.get(synapse.from);
+          const toNeuron = neuronById.get(synapse.to);
           if (!fromNeuron || !toNeuron) return null;
 
           const x = fromNeuron.x + (toNeuron.x - fromNeuron.x) * progress;
@@ -227,7 +214,6 @@ export const BioNeuronNetwork: React.FC<BioNeuronNetworkProps> = ({
 
           return (
             <g key={`signal-${index}`}>
-              {/* 信号光晕 */}
               <circle
                 cx={x}
                 cy={y}
@@ -236,26 +222,17 @@ export const BioNeuronNetwork: React.FC<BioNeuronNetworkProps> = ({
                 opacity={0.3 * (1 - progress)}
                 filter="url(#signalGlow)"
               />
-              {/* 信号核心 */}
-              <circle
-                cx={x}
-                cy={y}
-                r={6}
-                fill="#FFD700"
-                filter="url(#signalGlow)"
-              />
+              <circle cx={x} cy={y} r={6} fill="#FFD700" filter="url(#signalGlow)" />
             </g>
           );
         })}
 
-        {/* 绘制神经元 */}
         {neurons.map((neuron) => {
           const activation = neuronActivation.get(neuron.id) || 0;
           const neuronRadius = 20 + activation * 10;
 
           return (
             <g key={`neuron-${neuron.id}`}>
-              {/* 神经元光晕 */}
               <circle
                 cx={neuron.x}
                 cy={neuron.y}
@@ -264,7 +241,6 @@ export const BioNeuronNetwork: React.FC<BioNeuronNetworkProps> = ({
                 opacity={activation * 0.5}
               />
 
-              {/* 神经元胞体 */}
               <circle
                 cx={neuron.x}
                 cy={neuron.y}
@@ -277,7 +253,6 @@ export const BioNeuronNetwork: React.FC<BioNeuronNetworkProps> = ({
                 }}
               />
 
-              {/* 神经元ID */}
               <text
                 x={neuron.x}
                 y={neuron.y}
@@ -294,10 +269,9 @@ export const BioNeuronNetwork: React.FC<BioNeuronNetworkProps> = ({
           );
         })}
 
-        {/* 层标签 */}
         {neuronsPerLayer.map((_, layerIndex) => {
-          const layerSpacing = 1000 / (neuronsPerLayer.length + 1);
-          const x = 140 + layerIndex * layerSpacing;
+          const layerSpacing = (svgW - 200) / (neuronsPerLayer.length + 1);
+          const x = 100 + (layerIndex + 1) * layerSpacing;
 
           return (
             <text
@@ -310,22 +284,26 @@ export const BioNeuronNetwork: React.FC<BioNeuronNetworkProps> = ({
               textAnchor="middle"
               style={{ fontFamily: theme.fonts.body }}
             >
-              {layerIndex === 0 ? "输入层" : layerIndex === neuronsPerLayer.length - 1 ? "输出层" : `隐藏层${layerIndex}`}
+              {layerIndex === 0
+                ? "输入层"
+                : layerIndex === neuronsPerLayer.length - 1
+                  ? "输出层"
+                  : `隐藏层${layerIndex}`}
             </text>
           );
         })}
       </svg>
 
-      {/* 说明文字 */}
       <div
         style={{
           marginTop: 20,
           fontSize: 16,
           color: "#00D9FF",
           textAlign: "center",
+          maxWidth: 1100,
         }}
       >
-        ⚡ 神经信号通过突触在神经元之间传递，形成复杂的信息处理网络
+        神经信号通过突触在神经元之间传递，形成复杂的信息处理网络。
       </div>
     </div>
   );

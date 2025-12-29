@@ -198,16 +198,9 @@ export const TechNetworkTopology: React.FC<TechNetworkTopologyProps> = ({
           <circle
             cx={packetX}
             cy={packetY}
-            r="5"
+            r={5 + 3 * (0.5 + 0.5 * Math.sin((frame + index * 13) * 0.25))}
             fill={statusColors[status]}
-          >
-            <animate
-              attributeName="r"
-              values="5;8;5"
-              dur="1s"
-              repeatCount="indefinite"
-            />
-          </circle>
+          />
         )}
       </g>
     );

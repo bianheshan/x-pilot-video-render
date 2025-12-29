@@ -301,16 +301,9 @@ export const TechCpuCore: React.FC<TechCpuCoreProps> = ({
             <circle
               cx={100 + (signalProgress / 100) * 880}
               cy="650"
-              r="8"
+              r={8 + 4 * (0.5 + 0.5 * Math.sin(frame * 0.2))}
               fill={theme.colors.accent}
-            >
-              <animate
-                attributeName="r"
-                values="8;12;8"
-                dur="1s"
-                repeatCount="indefinite"
-              />
-            </circle>
+            />
           </>
         )}
       </svg>

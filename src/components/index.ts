@@ -10,6 +10,7 @@ export { AISpeaker } from "./AISpeaker";
 export { SplitScreen } from "./Layouts/SplitScreen";
 export { PictureInPicture } from "./Layouts/PictureInPicture";
 export { FullScreen } from "./Layouts/FullScreen";
+export * from "./Layouts";
 
 // 叙事排版组件库 (Narrative Typography)
 export * from "./narrative-typography";

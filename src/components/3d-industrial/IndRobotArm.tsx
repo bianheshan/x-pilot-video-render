@@ -371,20 +371,13 @@ export const IndRobotArm: React.FC<IndRobotArmProps> = ({
           <circle
             cx={baseX + finalTargetX}
             cy={baseY + finalTargetY}
-            r={15}
+            r={15 + 5 * (0.5 + 0.5 * Math.sin(frame * 0.2))}
             fill="none"
             stroke="#00FF00"
             strokeWidth={3}
             strokeDasharray="5,5"
             filter="url(#glow)"
-          >
-            <animate
-              attributeName="r"
-              values="15;20;15"
-              dur="1s"
-              repeatCount="indefinite"
-            />
-          </circle>
+          />
           <line
             x1={baseX + finalTargetX - 20}
             y1={baseY + finalTargetY}

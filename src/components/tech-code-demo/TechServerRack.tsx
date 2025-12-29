@@ -96,14 +96,7 @@ export const TechServerRack: React.FC<TechServerRackProps> = ({
             r="4"
             fill={statusColors[server.status]}
             opacity={getLightOpacity(server.id, lightIndex)}
-          >
-            <animate
-              attributeName="opacity"
-              values={`${getLightOpacity(server.id, lightIndex)};1;${getLightOpacity(server.id, lightIndex)}`}
-              dur="1s"
-              repeatCount="indefinite"
-            />
-          </circle>
+          />
         ))}
 
         {/* 硬盘指示灯 */}
@@ -179,7 +172,7 @@ export const TechServerRack: React.FC<TechServerRackProps> = ({
             <rect
               x="250"
               y="15"
-              width={loadBarWidth}
+              width={loadBarWidth * entryProgress}
               height="20"
               fill={
                 server.load > 90
@@ -189,14 +182,7 @@ export const TechServerRack: React.FC<TechServerRackProps> = ({
                   : "#4EC9B0"
               }
               rx="3"
-            >
-              <animate
-                attributeName="width"
-                values={`0;${loadBarWidth}`}
-                dur="1s"
-                fill="freeze"
-              />
-            </rect>
+            />
             <text
               x="460"
               y="30"

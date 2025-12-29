@@ -175,9 +175,6 @@ export const StatCircularProgress: React.FC<StatCircularProgressProps> = ({
               strokeDashoffset={strokeDashoffset}
               transform={`rotate(-90 ${size / 2} ${size / 2})`}
               filter="url(#glow)"
-              style={{
-                transition: "stroke-dashoffset 0.1s linear",
-              }}
             />
 
             {/* 发光端点 */}

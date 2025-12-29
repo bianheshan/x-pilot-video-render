@@ -1,39 +1,58 @@
 import React from "react";
+import type { ReactNode } from "react";
 import { useCurrentFrame, useVideoConfig, interpolate, spring } from "remotion";
 import { useTheme } from "../../contexts/ThemeContext";
 
+export type ListStaggeredEntryItem =
+  | string
+  | {
+      title: string;
+      description?: ReactNode;
+      icon?: ReactNode;
+      accentColor?: string;
+      badge?: string;
+    };
+
 export interface ListStaggeredEntryProps {
-  items: string[];
+  items: ListStaggeredEntryItem[];
   title?: string;
   accentColor?: string;
   staggerDelay?: number;
+  twoColumns?: boolean;
+  align?: "left" | "center";
 }
 
+const normalizeItem = (item: ListStaggeredEntryItem): {
+  title: ReactNode;
+  description?: ReactNode;
+  icon?: ReactNode;
+  accentColor?: string;
+  badge?: string;
+} => (typeof item === "string" ? { title: item } : item);
+
 /**
- * 弹性列表
- * 列表项依次带弹性地滑入，拒绝僵硬
+ * 列表交错进入 - 支持字符串与对象混合，自动生成知识要点卡片。
  */
 export const ListStaggeredEntry: React.FC<ListStaggeredEntryProps> = ({
   items,
   title = "Key Points",
   accentColor,
   staggerDelay = 8,
+  twoColumns = false,
+  align = "center",
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const theme = useTheme();
-  
-  // 使用主题颜色或传入的颜色
   const highlightColor = accentColor || theme.colors.primary;
+  const normalizedItems = items.map(normalizeItem);
 
-  // 标题进入动画
-  const titleY = interpolate(frame, [0, 25], [-50, 0], {
-    extrapolateRight: "clamp",
-  });
+  const titleY = interpolate(frame, [0, 25], [-50, 0], { extrapolateRight: "clamp" });
+  const titleOpacity = interpolate(frame, [0, 20], [0, 1], { extrapolateRight: "clamp" });
 
-  const titleOpacity = interpolate(frame, [0, 20], [0, 1], {
-    extrapolateRight: "clamp",
-  });
+  const columnized = twoColumns
+    ? [normalizedItems.filter((_, idx) => idx % 2 === 0), normalizedItems.filter((_, idx) => idx % 2 !== 0)]
+    : [normalizedItems];
 
   return (
     <div
@@ -44,23 +63,21 @@ export const ListStaggeredEntry: React.FC<ListStaggeredEntryProps> = ({
         display: "flex",
         flexDirection: "column",
         justifyContent: "center",
-        alignItems: "center",
+        alignItems: align === "center" ? "center" : "flex-start",
         background: theme.colors.background,
         padding: 80,
         overflow: "hidden",
       }}
     >
-      {/* 背景装饰 */}
       <div
+        aria-hidden
         style={{
           position: "absolute",
-          width: "100%",
-          height: "100%",
-          backgroundImage: `radial-gradient(circle at 20% 50%, ${highlightColor}11 0%, transparent 50%)`,
+          inset: 0,
+          backgroundImage: `radial-gradient(circle at 20% 50%, ${highlightColor}11 0%, transparent 55%)`,
         }}
       />
 
-      {/* 标题 */}
       <h2
         style={{
           fontSize: 56,
@@ -70,236 +87,177 @@ export const ListStaggeredEntry: React.FC<ListStaggeredEntryProps> = ({
           fontFamily: theme.fonts.heading,
           textTransform: "uppercase",
           letterSpacing: 3,
+          textAlign: align,
           textShadow: `0 0 20px ${highlightColor}66`,
           transform: `translateY(${titleY}px)`,
           opacity: titleOpacity,
+          width: "100%",
         }}
       >
         {title}
       </h2>
 
-      {/* 列表容器 */}
       <div
         style={{
+          display: "grid",
+          gridTemplateColumns: `repeat(${columnized.length}, minmax(0, 1fr))`,
+          gap: 30,
           width: "100%",
-          maxWidth: 900,
-          display: "flex",
-          flexDirection: "column",
-          gap: 25,
+          maxWidth: twoColumns ? 1200 : 900,
         }}
       >
-        {items.map((item, index) => {
-          // 每个项目的延迟开始帧
-          const startFrame = 20 + index * staggerDelay;
+        {columnized.map((column, columnIndex) => (
+          <div key={`col-${columnIndex}`} style={{ display: "flex", flexDirection: "column", gap: 25 }}>
+            {column.map((item, index) => {
+              const absoluteIndex = twoColumns ? columnIndex + index * 2 : index;
+              const startFrame = 20 + absoluteIndex * staggerDelay;
 
-          // 弹性进入动画
-          const itemSpring = spring({
-            frame: frame - startFrame,
-            fps,
-            config: {
-              damping: 15,
-              mass: 0.5,
-              stiffness: 100,
-            },
-          });
+              const itemSpring = spring({
+                frame: frame - startFrame,
+                fps,
+                config: { damping: 15, mass: 0.5, stiffness: 100 },
+              });
 
-          // X 轴滑入
-          const itemX = interpolate(
-            itemSpring,
-            [0, 1],
-            [-100, 0]
-          );
+              const itemX = interpolate(itemSpring, [0, 1], [-100, 0]);
+              const itemOpacity = interpolate(frame, [startFrame, startFrame + 15], [0, 1], {
+                extrapolateLeft: "clamp",
+                extrapolateRight: "clamp",
+              });
+              const itemScale = interpolate(itemSpring, [0, 1], [0.85, 1]);
 
-          // 透明度
-          const itemOpacity = interpolate(
-            frame,
-            [startFrame, startFrame + 15],
-            [0, 1],
-            {
-              extrapolateLeft: "clamp",
-              extrapolateRight: "clamp",
-            }
-          );
+              const numberRotate = interpolate(frame, [startFrame, startFrame + 18], [180, 0], {
+                extrapolateLeft: "clamp",
+                extrapolateRight: "clamp",
+              });
 
-          // 缩放动画
-          const itemScale = interpolate(
-            itemSpring,
-            [0, 1],
-            [0.8, 1]
-          );
+              const isHighlighted = frame >= startFrame && frame < startFrame + 35;
+              const highlightOpacity = isHighlighted
+                ? interpolate(
+                    frame,
+                    [startFrame, startFrame + 18, startFrame + 28, startFrame + 35],
+                    [0, 1, 1, 0]
+                  )
+                : 0;
 
-          // 序号动画
-          const numberRotate = interpolate(
-            frame,
-            [startFrame, startFrame + 20],
-            [180, 0],
-            {
-              extrapolateLeft: "clamp",
-              extrapolateRight: "clamp",
-            }
-          );
+              const chipColor = item.accentColor || highlightColor;
 
-          // 高亮效果
-          const isHighlighted = frame >= startFrame && frame < startFrame + 30;
-          const highlightOpacity = isHighlighted
-            ? interpolate(
-                frame,
-                [startFrame, startFrame + 15, startFrame + 25, startFrame + 30],
-                [0, 1, 1, 0]
-              )
-            : 0;
-
-          return (
-            <div
-              key={index}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 25,
-                transform: `translateX(${itemX}px) scale(${itemScale})`,
-                opacity: itemOpacity,
-                position: "relative",
-              }}
-            >
-              {/* 序号圆圈 */}
-              <div
-                style={{
-                  minWidth: 60,
-                  height: 60,
-                  borderRadius: "50%",
-                  background: `linear-gradient(135deg, ${highlightColor}, ${highlightColor}cc)`,
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  fontSize: 28,
-                  fontWeight: "bold",
-                  color: theme.colors.text,
-                  boxShadow: `0 0 20px ${highlightColor}66`,
-                  transform: `rotate(${numberRotate}deg)`,
-                  position: "relative",
-                }}
-              >
-                {index + 1}
-                
-                {/* 脉冲效果 */}
-                {isHighlighted && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      width: "100%",
-                      height: "100%",
-                      borderRadius: "50%",
-                      border: `3px solid ${highlightColor}`,
-                      opacity: highlightOpacity,
-                      transform: `scale(${1 + highlightOpacity * 0.5})`,
-                    }}
-                  />
-                )}
-              </div>
-
-              {/* 内容卡片 */}
-              <div
-                style={{
-                  flex: 1,
-                  padding: "20px 30px",
-                  background: theme.colors.surface,
-                  backdropFilter: "blur(10px)",
-                  borderRadius: 15,
-                  border: `2px solid ${isHighlighted ? highlightColor : theme.colors.surfaceLight}`,
-                  boxShadow: isHighlighted
-                    ? `0 0 30px ${highlightColor}44`
-                    : `0 5px 15px ${theme.colors.shadow}`,
-                  transition: "all 0.3s ease",
-                  position: "relative",
-                  overflow: "hidden",
-                }}
-              >
-                {/* 高亮扫光 */}
-                {isHighlighted && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      top: 0,
-                      left: interpolate(
-                        frame,
-                        [startFrame, startFrame + 30],
-                        [-100, 200],
-                        {
-                          extrapolateRight: "clamp",
-                        }
-                      ),
-                      width: 100,
-                      height: "100%",
-                      background: `linear-gradient(90deg, transparent, ${highlightColor}44, transparent)`,
-                      transform: "skewX(-20deg)",
-                      filter: "blur(10px)",
-                    }}
-                  />
-                )}
-
-                <p
+              return (
+                <div
+                  key={`${item.title}-${absoluteIndex}`}
                   style={{
-                    fontSize: 24,
-                    color: theme.colors.text,
-                    margin: 0,
-                    fontFamily: theme.fonts.body,
-                    lineHeight: 1.5,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 25,
+                    transform: `translateX(${itemX}px) scale(${itemScale})`,
+                    opacity: itemOpacity,
                     position: "relative",
-                    zIndex: 1,
                   }}
                 >
-                  {item}
-                </p>
-              </div>
+                  <div
+                    style={{
+                      minWidth: 60,
+                      height: 60,
+                      borderRadius: "50%",
+                      background: `linear-gradient(135deg, ${chipColor}, ${chipColor}cc)`,
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      fontSize: 28,
+                      fontWeight: 700,
+                      color: theme.colors.text,
+                      boxShadow: `0 0 20px ${chipColor}66`,
+                      transform: `rotate(${numberRotate}deg)`,
+                    }}
+                  >
+                    {item.icon ?? absoluteIndex + 1}
+                  </div>
 
-              {/* 连接线 */}
-              {index < items.length - 1 && (
-                <div
-                  style={{
-                    position: "absolute",
-                    left: 30,
-                    top: 60,
-                    width: 2,
-                    height: 25,
-                    background: `linear-gradient(to bottom, ${highlightColor}, transparent)`,
-                    opacity: 0.5,
-                  }}
-                />
-              )}
-            </div>
-          );
-        })}
-      </div>
+                  <div
+                    style={{
+                      flex: 1,
+                      padding: "20px 30px",
+                      background: theme.colors.surface,
+                      backdropFilter: "blur(10px)",
+                      borderRadius: 18,
+                      border: `2px solid ${isHighlighted ? chipColor : theme.colors.surfaceLight}`,
+                      boxShadow: isHighlighted
+                        ? `0 0 30px ${chipColor}44`
+                        : `0 5px 15px ${theme.colors.shadow}`,
+                      position: "relative",
+                      overflow: "hidden",
+                    }}
+                  >
+                    {isHighlighted && (
+                      <div
+                        aria-hidden
+                        style={{
+                          position: "absolute",
+                          inset: 0,
+                          background: `linear-gradient(120deg, transparent, ${chipColor}22, transparent)`,
+                          opacity: highlightOpacity,
+                        }}
+                      />
+                    )}
 
-      {/* 进度指示器 */}
-      <div
-        style={{
-          position: "absolute",
-          bottom: 50,
-          display: "flex",
-          gap: 10,
-        }}
-      >
-        {items.map((_, index) => {
-          const dotStartFrame = 20 + index * staggerDelay;
-          const dotActive = frame >= dotStartFrame;
-          const dotOpacity = dotActive ? 1 : 0.3;
+                    <p
+                      style={{
+                        fontSize: 26,
+                        color: theme.colors.text,
+                        margin: 0,
+                        fontWeight: 600,
+                        fontFamily: theme.fonts.body,
+                      }}
+                    >
+                      {item.title}
+                      {item.badge && (
+                        <span
+                          style={{
+                            marginLeft: 12,
+                            fontSize: 16,
+                            padding: "4px 10px",
+                            borderRadius: 999,
+                            background: `${chipColor}22`,
+                            color: chipColor,
+                          }}
+                        >
+                          {item.badge}
+                        </span>
+                      )}
+                    </p>
 
-          return (
-            <div
-              key={index}
-              style={{
-                width: 12,
-                height: 12,
-                borderRadius: "50%",
-                background: highlightColor,
-                opacity: dotOpacity,
-                boxShadow: dotActive ? `0 0 10px ${highlightColor}` : "none",
-                transition: "all 0.3s ease",
-              }}
-            />
-          );
-        })}
+                    {item.description && (
+                      <div
+                        style={{
+                          marginTop: 10,
+                          fontSize: 20,
+                          color: theme.colors.textSecondary,
+                          lineHeight: 1.5,
+                        }}
+                      >
+                        {item.description}
+                      </div>
+                    )}
+                  </div>
+
+                  {absoluteIndex < normalizedItems.length - 1 && (
+                    <div
+                      aria-hidden
+                      style={{
+                        position: "absolute",
+                        left: 30,
+                        top: 60,
+                        width: 2,
+                        height: 25,
+                        background: `linear-gradient(to bottom, ${chipColor}, transparent)`,
+                        opacity: 0.4,
+                      }}
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ))}
       </div>
     </div>
   );

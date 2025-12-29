@@ -158,7 +158,6 @@ export const TechBrowserMockup: React.FC<TechBrowserMockupProps> = ({
           <div
             style={{
               transform: `translateY(${scrollOffset}px)`,
-              transition: "transform 0.1s",
             }}
           >
             {content || (

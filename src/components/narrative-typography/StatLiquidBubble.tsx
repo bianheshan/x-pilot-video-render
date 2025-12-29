@@ -317,7 +317,6 @@ export const StatLiquidBubble: React.FC<StatLiquidBubbleProps> = ({
                 height: "100%",
                 background: `linear-gradient(90deg, ${bubbleColor}, ${bubbleColor}cc)`,
                 boxShadow: `0 0 10px ${bubbleColor}`,
-                transition: "width 0.1s linear",
               }}
             />
           </div>

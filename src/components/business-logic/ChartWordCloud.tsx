@@ -1,7 +1,6 @@
 import React, { useMemo } from "react";
-import { useCurrentFrame, interpolate } from "remotion";
+import { interpolate, random, useCurrentFrame, useVideoConfig } from "remotion";
 import { useTheme } from "../../contexts/ThemeContext";
-import cloud from "d3-cloud";
 
 export interface WordData {
   text: string;
@@ -9,33 +8,89 @@ export interface WordData {
   color?: string;
 }
 
+type Seed = string | number;
+
 export interface ChartWordCloudProps {
   data: WordData[];
   title?: string;
+  /** Deterministic seed (avoid Math.random). */
+  seed?: Seed;
+  /** Max words to render (performance + readability). */
+  maxWords?: number;
+  /** Cloud drawing area (defaults derived from video size). */
+  width?: number;
+  height?: number;
+  /** Font size range (px). */
+  minFontSize?: number;
+  maxFontSize?: number;
+  /** Padding between words (px). */
+  padding?: number;
+  /** Allow 90° rotated words for classic word-cloud feel. */
+  allowRotate?: boolean;
 }
 
-interface CloudWord {
+type PlacedWord = {
   text: string;
   size: number;
-  x?: number;
-  y?: number;
-  rotate?: number;
-  color?: string;
-}
+  x: number;
+  y: number;
+  rotate: 0 | 90;
+  color: string;
+  approxWidth: number;
+  approxHeight: number;
+};
+
+const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
+
+const approxTextBox = (text: string, fontSize: number, rotate: 0 | 90) => {
+  // Approximation: stable and fast; avoids canvas measurement during render.
+  const baseWidth = Math.max(1, text.length) * fontSize * 0.62;
+  const baseHeight = fontSize * 1.05;
+  return rotate === 90
+    ? { width: baseHeight, height: baseWidth }
+    : { width: baseWidth, height: baseHeight };
+};
+
+const boxesOverlap = (
+  a: { x: number; y: number; w: number; h: number },
+  b: { x: number; y: number; w: number; h: number }
+) => {
+  return !(
+    a.x + a.w / 2 < b.x - b.w / 2 ||
+    a.x - a.w / 2 > b.x + b.w / 2 ||
+    a.y + a.h / 2 < b.y - b.h / 2 ||
+    a.y - a.h / 2 > b.y + b.h / 2
+  );
+};
 
 /**
- * 动态词云 (使用 d3-cloud)
- * 关键词汇聚成云，随风缓慢漂浮或旋转
- * 适用场景：关键词分析、热点话题、标签云
+ * Dynamic word cloud (deterministic, frame-friendly).
+ *
+ * Why not d3-cloud?
+ * - d3-cloud is async / timer-driven, and can be non-deterministic in Remotion renders.
+ * - This implementation is synchronous and deterministic (seeded), suitable for teaching videos.
  */
 export const ChartWordCloud: React.FC<ChartWordCloudProps> = ({
-  data = [],
+  data,
   title = "关键词云",
+  seed,
+  maxWords = 40,
+  width,
+  height,
+  minFontSize = 22,
+  maxFontSize = 90,
+  padding = 10,
+  allowRotate = true,
 }) => {
   const frame = useCurrentFrame();
+  const { width: videoW, height: videoH } = useVideoConfig();
   const theme = useTheme();
 
-  if (data.length === 0) {
+  const cloudW = width ?? Math.min(1100, Math.max(720, videoW - 320));
+  const cloudH = height ?? Math.min(680, Math.max(420, videoH - 400));
+
+  const cleaned = (data ?? []).filter((d) => d && d.text && Number.isFinite(d.value));
+  if (cleaned.length === 0) {
     return (
       <div
         style={{
@@ -47,48 +102,95 @@ export const ChartWordCloud: React.FC<ChartWordCloudProps> = ({
           color: theme.colors.error || "#ef4444",
           fontSize: 24,
           fontFamily: theme.fonts.body,
+          backgroundColor: theme.colors.background,
         }}
       >
-        ⚠️ 请提供词云数据
+        请提供词云数据
       </div>
     );
   }
 
-  const maxValue = Math.max(...data.map((d) => d.value), 1);
-  const opacity = interpolate(frame, [0, 30], [0, 1], {
-    extrapolateRight: "clamp",
-  });
+  const maxValue = Math.max(...cleaned.map((d) => d.value), 1);
+  const opacity = interpolate(frame, [0, 30], [0, 1], { extrapolateRight: "clamp" });
 
-  // 使用 d3-cloud 计算词云布局
-  const words = useMemo(() => {
-    const colors = [
+  const words = useMemo<PlacedWord[]>(() => {
+    const seedBase = (seed ?? "ChartWordCloud").toString();
+
+    const palette = [
       theme.colors.primary,
       theme.colors.secondary,
       theme.colors.success,
       theme.colors.warning,
-    ];
+      theme.colors.accent,
+    ].filter(Boolean) as string[];
 
-    const cloudWords: CloudWord[] = data.map((word, index) => ({
-      text: word.text,
-      size: (word.value / maxValue) * 80 + 20,
-      color: word.color || colors[index % colors.length],
-    }));
+    const sorted = [...cleaned]
+      .sort((a, b) => b.value - a.value)
+      .slice(0, Math.max(1, Math.floor(maxWords)));
 
-    let layoutWords: CloudWord[] = [];
+    const placed: PlacedWord[] = [];
 
-    cloud()
-      .size([1000, 600])
-      .words(cloudWords)
-      .padding(5)
-      .rotate(() => (Math.random() > 0.7 ? 90 : 0))
-      .fontSize((d: any) => d.size)
-      .on("end", (words: any[]) => {
-        layoutWords = words;
-      })
-      .start();
+    for (const w of sorted) {
+      const size = clamp((w.value / maxValue) * maxFontSize, minFontSize, maxFontSize);
+      const rotate: 0 | 90 = allowRotate && random(`${seedBase}:rot:${w.text}`) > 0.78 ? 90 : 0;
+      const color =
+        w.color ||
+        palette[Math.floor(random(`${seedBase}:color:${w.text}`) * palette.length)] ||
+        theme.colors.primary;
 
-    return layoutWords;
-  }, [data, maxValue, theme]);
+      const { width: boxW, height: boxH } = approxTextBox(w.text, size, rotate);
+
+      const maxAttempts = 900;
+      let found = false;
+      let x = 0;
+      let y = 0;
+
+      for (let k = 0; k < maxAttempts; k++) {
+        const angle = k * 0.35 + random(`${seedBase}:a:${w.text}`) * Math.PI * 2;
+        const radius = 0.6 * k;
+        x = Math.cos(angle) * radius;
+        y = Math.sin(angle) * radius;
+
+        const bbox = { x, y, w: boxW + padding, h: boxH + padding };
+
+        const fitsBounds =
+          Math.abs(x) + bbox.w / 2 < cloudW / 2 - 8 &&
+          Math.abs(y) + bbox.h / 2 < cloudH / 2 - 8;
+
+        if (!fitsBounds) continue;
+
+        const collides = placed.some((p) =>
+          boxesOverlap(
+            { x: p.x, y: p.y, w: p.approxWidth + padding, h: p.approxHeight + padding },
+            bbox
+          )
+        );
+        if (!collides) {
+          found = true;
+          break;
+        }
+      }
+
+      if (!found) {
+        // If we can't place without collision, still place near center for coverage.
+        x = (random(`${seedBase}:fallback:x:${w.text}`) - 0.5) * (cloudW * 0.35);
+        y = (random(`${seedBase}:fallback:y:${w.text}`) - 0.5) * (cloudH * 0.35);
+      }
+
+      placed.push({
+        text: w.text,
+        size,
+        x,
+        y,
+        rotate,
+        color,
+        approxWidth: boxW,
+        approxHeight: boxH,
+      });
+    }
+
+    return placed;
+  }, [allowRotate, cleaned, cloudH, cloudW, maxFontSize, maxValue, maxWords, minFontSize, padding, seed, theme]);
 
   return (
     <div
@@ -108,52 +210,37 @@ export const ChartWordCloud: React.FC<ChartWordCloudProps> = ({
       <h2
         style={{
           fontSize: 48,
-          fontWeight: "bold",
+          fontWeight: 800,
           color: theme.colors.text,
-          marginBottom: 40,
+          marginBottom: 24,
           fontFamily: theme.fonts.heading,
         }}
       >
         {title}
       </h2>
 
-      <svg width={1000} height={600}>
-        <g transform="translate(500, 300)">
+      <svg width={cloudW} height={cloudH} style={{ overflow: "visible" }}>
+        <g transform={`translate(${cloudW / 2}, ${cloudH / 2})`}>
           {words.map((word, index) => {
-            // 漂浮动画
-            const floatX = interpolate(
-              frame,
-              [0, 120],
-              [0, Math.sin(index * 0.5) * 10],
-              { extrapolateRight: "wrap" }
-            );
-            const floatY = interpolate(
-              frame,
-              [0, 150],
-              [0, Math.cos(index * 0.3) * 8],
-              { extrapolateRight: "wrap" }
-            );
-
-            // 缩放动画
-            const scale = interpolate(frame, [0, 30], [0, 1], {
-              extrapolateRight: "clamp",
-            });
+            const wobbleX = Math.sin((frame + index * 17) / 22) * 6;
+            const wobbleY = Math.cos((frame + index * 13) / 26) * 5;
+            const appear = interpolate(frame, [0, 28], [0, 1], { extrapolateRight: "clamp" });
 
             return (
               <text
-                key={index}
+                key={`${word.text}-${index}`}
+                textAnchor="middle"
+                dominantBaseline="middle"
                 style={{
                   fontSize: word.size,
                   fontFamily: theme.fonts.heading,
-                  fontWeight: "bold",
+                  fontWeight: 800,
                   fill: word.color,
-                  textShadow: `0 2px 8px ${word.color}40`,
-                  cursor: "pointer",
+                  paintOrder: "stroke",
+                  stroke: "rgba(0,0,0,0.25)",
+                  strokeWidth: 6,
                 }}
-                textAnchor="middle"
-                transform={`translate(${(word.x || 0) + floatX}, ${
-                  (word.y || 0) + floatY
-                }) rotate(${word.rotate || 0}) scale(${scale})`}
+                transform={`translate(${word.x + wobbleX}, ${word.y + wobbleY}) rotate(${word.rotate}) scale(${appear})`}
               >
                 {word.text}
               </text>
@@ -164,12 +251,12 @@ export const ChartWordCloud: React.FC<ChartWordCloudProps> = ({
 
       <div
         style={{
-          marginTop: 20,
+          marginTop: 14,
           fontSize: 18,
           color: theme.colors.textSecondary,
         }}
       >
-        词汇大小代表权重，随风缓慢漂浮
+        字号代表权重（value），布局可复现（seeded）
       </div>
     </div>
   );
