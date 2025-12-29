@@ -49,7 +49,7 @@ interface SubtitleProps {
 const PRESET_POSITIONS: Record<"top" | "center" | "bottom", CSSProperties> = {
   top: { top: "10%", justifyContent: "flex-start" },
   center: { top: "50%", transform: "translateY(-50%)", justifyContent: "center" },
-  bottom: { bottom: "10%", justifyContent: "flex-end" },
+  bottom: { bottom: "5%", justifyContent: "flex-end" },
 };
 
 const highlightText = (text: ReactNode, words?: string[], color?: string) => {
@@ -80,8 +80,8 @@ export const Subtitle: React.FC<SubtitleProps> = ({
   animate = true,
   backgroundColor,
   textColor,
-  maxWidth = "90%",
-  safeAreaPadding = 60,
+  maxWidth = "88%",
+  safeAreaPadding = 8,
   interactive = false,
   speakerLabel,
   align = "center",
@@ -94,7 +94,7 @@ export const Subtitle: React.FC<SubtitleProps> = ({
   const relativeFrame = frame - startFrame;
   const isActive = relativeFrame >= 0 && relativeFrame <= durationInFrames;
 
-  const baseBg = backgroundColor || theme.colors.subtitleBackground || "rgba(0, 0, 0, 0.8)";
+  const baseBg = backgroundColor || theme.colors.subtitleBackground || "rgba(0, 0, 0, 0.45)";
   const baseTextColor = textColor || theme.colors.subtitleText || "#ffffff";
 
   const opacity = animate
@@ -130,11 +130,11 @@ export const Subtitle: React.FC<SubtitleProps> = ({
 
   const bubbleStyle: CSSProperties = {
     backgroundColor: variant === "solid" ? baseBg : variant === "outline" ? "transparent" : "rgba(0,0,0,0.0001)",
-    border: variant === "outline" ? `2px solid ${baseBg}` : undefined,
+    border: variant === "outline" ? `1.5px solid ${baseBg}` : undefined,
     boxShadow:
       variant === "transparent"
         ? "none"
-        : "0 10px 40px rgba(0,0,0,0.35), 0 0 20px rgba(0,0,0,0.25)",
+        : "0 4px 12px rgba(0,0,0,0.2), 0 0 8px rgba(0,0,0,0.15)",
   };
 
   return (
@@ -165,8 +165,8 @@ export const Subtitle: React.FC<SubtitleProps> = ({
         <div
           style={{
             maxWidth,
-            padding: "20px 40px",
-            borderRadius: 16,
+            padding: "8px 16px",
+            borderRadius: 10,
             color: baseTextColor,
             backdropFilter: variant === "transparent" ? "blur(8px)" : undefined,
             WebkitBackdropFilter: variant === "transparent" ? "blur(8px)" : undefined,
@@ -177,11 +177,11 @@ export const Subtitle: React.FC<SubtitleProps> = ({
           {speakerLabel ? (
             <div
               style={{
-                fontSize: 20,
+                fontSize: 14,
                 fontWeight: 600,
-                marginBottom: 6,
+                marginBottom: 4,
                 opacity: 0.8,
-                letterSpacing: 1,
+                letterSpacing: 0.3,
                 textTransform: "uppercase",
               }}
             >
@@ -191,9 +191,9 @@ export const Subtitle: React.FC<SubtitleProps> = ({
 
           <div
             style={{
-              fontSize: 42,
+              fontSize: 26,
               fontWeight: 600,
-              lineHeight: 1.4,
+              lineHeight: 1.28,
               margin: 0,
               fontFamily: theme.fonts.body,
               textShadow: variant === "transparent" ? "none" : "2px 4px 8px rgba(0,0,0,0.45)",

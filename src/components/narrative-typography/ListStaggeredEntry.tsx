@@ -20,6 +20,7 @@ export interface ListStaggeredEntryProps {
   staggerDelay?: number;
   twoColumns?: boolean;
   align?: "left" | "center";
+  backgroundColor?: string; // 覆盖默认背景，默认透明以继承父级
 }
 
 const normalizeItem = (item: ListStaggeredEntryItem): {
@@ -40,6 +41,7 @@ export const ListStaggeredEntry: React.FC<ListStaggeredEntryProps> = ({
   staggerDelay = 8,
   twoColumns = false,
   align = "center",
+  backgroundColor,
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -64,7 +66,7 @@ export const ListStaggeredEntry: React.FC<ListStaggeredEntryProps> = ({
         flexDirection: "column",
         justifyContent: "center",
         alignItems: align === "center" ? "center" : "flex-start",
-        background: theme.colors.background,
+        background: backgroundColor ?? "transparent",
         padding: 80,
         overflow: "hidden",
       }}

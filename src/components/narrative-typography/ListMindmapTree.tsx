@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { useCurrentFrame, interpolate } from "remotion";
 import { useTheme } from "../../contexts/ThemeContext";
 
@@ -6,12 +6,25 @@ export interface TreeNode {
   id: string;
   label: string;
   children?: TreeNode[];
+  style?: React.CSSProperties;
+}
+
+export interface MindmapDataNode {
+  id?: string;
+  name?: string;
+  label?: string;
+  children?: MindmapDataNode[];
+  style?: React.CSSProperties;
 }
 
 export interface ListMindmapTreeProps {
-  rootNode: TreeNode;
+  rootNode?: TreeNode;
+  data?: MindmapDataNode; // 兼容 Dify 生成的 data 格式
   accentColor?: string;
   title?: string;
+  lineColor?: string;
+  depthDistance?: number;
+  backgroundColor?: string; // 覆盖默认背景，默认为透明以继承父级背景
 }
 
 /**
@@ -20,14 +33,44 @@ export interface ListMindmapTreeProps {
  */
 export const ListMindmapTree: React.FC<ListMindmapTreeProps> = ({
   rootNode,
+  data,
   accentColor,
   title,
+  backgroundColor,
 }) => {
   const frame = useCurrentFrame();
   const theme = useTheme();
   
   // 使用主题颜色或传入的颜色
   const treeColor = accentColor || theme.colors.primary;
+
+  // 将 Dify 生成的 data 转换为内部 TreeNode 结构
+  const normalizeNode = (node?: MindmapDataNode): TreeNode | undefined => {
+    if (!node) return undefined;
+    const children = (node.children || [])
+      .map((child, idx) => normalizeNode(child) || undefined)
+      .filter(Boolean) as TreeNode[];
+    const rawLabel = node.label || node.name || "Node";
+    const id = node.id || rawLabel.replace(/\s+/g, "_").toLowerCase();
+    return {
+      id,
+      label: rawLabel,
+      children,
+      style: node.style,
+    };
+  };
+
+  const normalizedRoot = useMemo(() => {
+    if (rootNode) return rootNode;
+    const converted = normalizeNode(data);
+    return (
+      converted || {
+        id: "root",
+        label: "Mindmap",
+        children: [],
+      }
+    );
+  }, [rootNode, data]);
 
   // 递归渲染树节点
   const renderNode = (
@@ -70,7 +113,8 @@ export const ListMindmapTree: React.FC<ListMindmapTreeProps> = ({
       }
     );
 
-    const hasChildren = node.children && node.children.length > 0;
+    const children = node.children || [];
+    const hasChildren = children.length > 0;
     const nodeSize = level === 0 ? 120 : level === 1 ? 100 : 80;
     const fontSize = level === 0 ? 24 : level === 1 ? 20 : 18;
 
@@ -162,7 +206,7 @@ export const ListMindmapTree: React.FC<ListMindmapTreeProps> = ({
             />
 
             {/* 水平分支线 */}
-            {node.children!.length > 1 && (
+            {children.length > 1 && (
               <div
                 style={{
                   position: "absolute",
@@ -176,7 +220,7 @@ export const ListMindmapTree: React.FC<ListMindmapTreeProps> = ({
               />
             )}
 
-            {node.children!.map((child, childIndex) => (
+            {children.map((child, childIndex) => (
               <div key={child.id} style={{ position: "relative" }}>
                 {/* 子节点连接线 */}
                 <div
@@ -216,7 +260,7 @@ export const ListMindmapTree: React.FC<ListMindmapTreeProps> = ({
         flexDirection: "column",
         justifyContent: "center",
         alignItems: "center",
-        background: theme.colors.background,
+        background: backgroundColor ?? "transparent",
         padding: 60,
         overflow: "hidden",
       }}
@@ -256,7 +300,7 @@ export const ListMindmapTree: React.FC<ListMindmapTreeProps> = ({
 
       {/* 树状图 */}
       <div style={{ position: "relative" }}>
-        {renderNode(rootNode, 0, 0, 20)}
+        {renderNode(normalizedRoot, 0, 0, 20)}
       </div>
 
       {/* 装饰粒子 */}

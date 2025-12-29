@@ -13,6 +13,7 @@ export interface CardNeumorphismProps {
   cardStyle?: CSSProperties;
   eyebrow?: string;
   footer?: ReactNode;
+  backgroundColor?: string;
 }
 
 /**
@@ -28,6 +29,7 @@ export const CardNeumorphism: React.FC<CardNeumorphismProps> = ({
   cardStyle,
   eyebrow,
   footer,
+  backgroundColor,
 }) => {
   const frame = useCurrentFrame();
   const theme = useTheme();
@@ -42,6 +44,7 @@ export const CardNeumorphism: React.FC<CardNeumorphismProps> = ({
   const floatY = Math.sin(frame / 40) * 5;
   const shadowIntensity = 0.8 + Math.sin(frame / 30) * 0.2;
   const bgColor = theme.colors.surface;
+  const resolvedBackground = backgroundColor ?? `linear-gradient(135deg, ${theme.colors.background} 0%, ${theme.colors.surface} 100%)`;
 
   const outerShadow =
     resolvedVariant === "raised"
@@ -59,7 +62,7 @@ export const CardNeumorphism: React.FC<CardNeumorphismProps> = ({
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        backgroundColor: theme.colors.background,
+        backgroundColor: resolvedBackground,
         overflow: "hidden",
         padding: 40,
       }}

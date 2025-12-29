@@ -3,10 +3,12 @@ import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import { useTheme } from "../../contexts/ThemeContext";
 
 export interface StatLiquidBubbleProps {
-  percentage: number;
-  label: string;
+  percentage?: number;      // 原始字段
+  value?: number;           // 兼容外部传入 value
+  label?: string;
   size?: number;
   liquidColor?: string;
+  color?: string;           // 兼容外部传入 color
   duration?: number;
 }
 
@@ -16,23 +18,35 @@ export interface StatLiquidBubbleProps {
  */
 export const StatLiquidBubble: React.FC<StatLiquidBubbleProps> = ({
   percentage,
-  label,
+  value,
+  label = "",
   size = 400,
   liquidColor,
+  color,
   duration = 120,
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const theme = useTheme();
   
+  const clampNumber = (v: number, min: number, max: number) => {
+    if (!Number.isFinite(v)) return min;
+    return Math.min(Math.max(v, min), max);
+  };
+
+  // 兼容 value/percentage，限制在 0-100
+  const safePercent = clampNumber(value ?? percentage ?? 0, 0, 100);
+  const safeDuration = Number.isFinite(duration) && duration! > 0 ? duration! : 120;
+  const safeSize = Number.isFinite(size) && size! > 0 ? size! : 400;
+
   // 使用主题颜色或传入的颜色
-  const bubbleColor = liquidColor || theme.colors.primary;
+  const bubbleColor = liquidColor || color || theme.colors.primary;
 
   // 水位上升动画
   const currentLevel = interpolate(
     frame,
-    [0, duration],
-    [100, 100 - percentage],
+    [0, safeDuration],
+    [100, 100 - safePercent],
     {
       extrapolateRight: "clamp",
       easing: (t) => {
@@ -62,9 +76,9 @@ export const StatLiquidBubble: React.FC<StatLiquidBubbleProps> = ({
     const y = interpolate(bubbleFrame, [0, 150], [currentLevel, -10]);
     const x = 30 + (i % 4) * 15 + Math.sin(bubbleFrame / 10) * 5;
     const opacity = interpolate(bubbleFrame, [0, 30, 120, 150], [0, 0.8, 0.8, 0]);
-    const size = 4 + (i % 3) * 2;
+    const bubbleSize = 4 + (i % 3) * 2;
 
-    return { x, y, opacity, size };
+    return { x, y, opacity, size: bubbleSize };
   });
 
   // 数字显示
@@ -73,8 +87,9 @@ export const StatLiquidBubble: React.FC<StatLiquidBubbleProps> = ({
   // 发光效果
   const glowIntensity = 0.6 + Math.sin(frame / 15) * 0.4;
 
-  const maskId = `liquid-mask-${label.replace(/\s/g, "")}`;
-  const gradientId = `liquid-gradient-${label.replace(/\s/g, "")}`;
+  const normalizedLabel = label || "bubble";
+  const maskId = `liquid-mask-${normalizedLabel.replace(/\s/g, "")}`;
+  const gradientId = `liquid-gradient-${normalizedLabel.replace(/\s/g, "")}`;
 
   return (
     <div
@@ -114,7 +129,7 @@ export const StatLiquidBubble: React.FC<StatLiquidBubbleProps> = ({
       >
         {/* SVG 球体 */}
         <div style={{ position: "relative" }}>
-          <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+          <svg width={safeSize} height={safeSize} viewBox={`0 0 ${safeSize} ${safeSize}`}>
             <defs>
               {/* 液体渐变 */}
               <linearGradient id={gradientId} x1="0%" y1="0%" x2="0%" y2="100%">

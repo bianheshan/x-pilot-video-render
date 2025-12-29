@@ -21,6 +21,7 @@ export interface LogicComparisonSliderProps {
   initialPosition?: number; // 0-1
   handleColor?: string;
   autoAnimate?: boolean;
+  backgroundColor?: string;
 }
 
 const clamp01 = (value: number) => Math.min(Math.max(value, 0), 1);
@@ -39,12 +40,14 @@ export const LogicComparisonSlider: React.FC<LogicComparisonSliderProps> = ({
   initialPosition = 0.5,
   handleColor,
   autoAnimate = true,
+  backgroundColor,
 }) => {
   const frame = useCurrentFrame();
   const theme = useTheme();
 
   const resolvedMode = mode || (beforeContent && afterContent ? "visual" : "data");
   const opacity = interpolate(frame, [0, 30], [0, 1], { extrapolateRight: "clamp" });
+  const resolvedBackground = backgroundColor ?? theme.colors.background;
 
   if (resolvedMode === "visual" && beforeContent && afterContent) {
     const animatedPosition = autoAnimate
@@ -63,7 +66,7 @@ export const LogicComparisonSlider: React.FC<LogicComparisonSliderProps> = ({
           justifyContent: "center",
           alignItems: "center",
           padding: 40,
-          backgroundColor: theme.colors.background,
+          backgroundColor: resolvedBackground,
           opacity,
         }}
       >
@@ -151,7 +154,7 @@ export const LogicComparisonSlider: React.FC<LogicComparisonSliderProps> = ({
         justifyContent: "center",
         alignItems: "center",
         padding: 40,
-        backgroundColor: theme.colors.background,
+        backgroundColor: resolvedBackground,
         opacity,
       }}
     >
