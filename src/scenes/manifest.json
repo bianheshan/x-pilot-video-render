@@ -5,17 +5,47 @@
   "height": 1080,
   "theme": "tech",
   "scenes": [
-    { "id": "scene1", "name": "Scene 1", "durationInFrames": 450, "component": "scene1.tsx" },
-    { "id": "scene2", "name": "Scene 2", "durationInFrames": 420, "component": "scene2.tsx" },
-    { "id": "scene3", "name": "Scene 3", "durationInFrames": 480, "component": "scene3.tsx" },
-    { "id": "scene4", "name": "Scene 4", "durationInFrames": 480, "component": "scene4.tsx" },
-    { "id": "scene5", "name": "Scene 5", "durationInFrames": 480, "component": "scene5.tsx" },
-    { "id": "scene6", "name": "Scene 6", "durationInFrames": 510, "component": "scene6.tsx" },
-    { "id": "scene7", "name": "Scene 7", "durationInFrames": 375, "component": "scene7.tsx" },
-    { "id": "scene8", "name": "Scene 8", "durationInFrames": 390, "component": "scene8.tsx" },
-    { "id": "scene9", "name": "Scene 9", "durationInFrames": 360, "component": "scene9.tsx" },
-    { "id": "scene10", "name": "Scene 10", "durationInFrames": 585, "component": "scene10.tsx" },
-    { "id": "scene11", "name": "Scene 11", "durationInFrames": 390, "component": "scene11.tsx" },
-    { "id": "scene12", "name": "Scene 12", "durationInFrames": 420, "component": "scene12.tsx" }
+    {
+      "id": "scene_1",
+      "name": "Explain the economic and political impact of WWI as the catalyst for nationalism.",
+      "durationInFrames": 435,
+      "component": "scene_1.tsx"
+    },
+    {
+      "id": "scene_2",
+      "name": "Define Satyagraha and list the early experiments.",
+      "durationInFrames": 420,
+      "component": "scene_2.tsx"
+    },
+    {
+      "id": "scene_3",
+      "name": "Visualize the oppression of the Rowlatt Act and the horror of Jallianwalla Bagh.",
+      "durationInFrames": 435,
+      "component": "scene_3.tsx"
+    },
+    {
+      "id": "scene_4",
+      "name": "Explain the Non-Cooperation Movement strategy: Khilafat unity and economic boycott.",
+      "durationInFrames": 450,
+      "component": "scene_4.tsx"
+    },
+    {
+      "id": "scene_5",
+      "name": "Depict the Salt March as a strategic symbol.",
+      "durationInFrames": 465,
+      "component": "scene_5.tsx"
+    },
+    {
+      "id": "scene_6",
+      "name": "Illustrate cultural nationalism.",
+      "durationInFrames": 450,
+      "component": "scene_6.tsx"
+    },
+    {
+      "id": "scene_7",
+      "name": "Conclusion and Quit India reference.",
+      "durationInFrames": 420,
+      "component": "scene_7.tsx"
+    }
   ]
 }

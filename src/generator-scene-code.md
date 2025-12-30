@@ -290,6 +290,7 @@ generate_scene_code(target_scene, course_json["config"])
 - **整屏布局组件会覆盖画面**：`FullScreen`、`SplitScreen`、`GridLayout`、`TimelineLayout`、`LayeredLayout` 等组件本身就是 `AbsoluteFill` 容器。若只想占据局部区域，先用 `div` 控制父容器尺寸或在 `Sequence` 中限制高度，再把布局组件嵌进去，避免与其它元素重叠。
 - **数据/统计组件要使用真实 props**：例如 `StatRollingCounter` 使用 `targetValue/label`，推荐 `durationInFrames`（`duration` 为兼容字段），并可传入 `seed` 保证可复现；`ChartBarRace` 接受“快照数组的数组”，推荐 `snapshotDurationInFrames`（`framesPerSnapshot` 为兼容字段）。务必参考组件源码或下文示例。
 - **禁止非确定性渲染**：场景代码与组件使用中禁止 `Math.random()` / `Date.now()` 等非确定逻辑。需要“随机感”时，使用 Remotion 的 `random(seed)` 或给组件传入 `seed`（如 `ChartWordCloud/StatRollingCounter/PhysCollisionCollider/IndCircuitBoard/...`）。
+- **颜色插值必须用 `safeInterpolateColor`/`interpolateColors`**：禁止把颜色字符串传给 `interpolate`。透明度渐变可用 `safeInterpolateAlpha`（`src/utils/colorUtils.ts`），或先插值数值再拼成 `rgba`。
 - **禁止时间驱动动画**：不要依赖 CSS `transition` / SVG SMIL（`<animate>`/`<animateTransform>`）来做关键动画。Remotion 场景应使用 `frame` + `interpolate/spring` 计算样式值（帧驱动）。
 - **禁止动态执行表达式**：不要在场景里写 `new Function()`。例如 `MathFunctionPlot` 请用其 `expression` 参数（支持 `sin/cos/...` 等基础表达式）。
 - **Sequence 与组件内部动画须匹配**：某些组件内部会基于帧数做插值（字幕、计数器、GridLayout 的 spring 动画等）。外层 Sequence 的 `durationInFrames` 必须覆盖这些动画，否则插值会在序列尚未结束时被截断或过早完成。

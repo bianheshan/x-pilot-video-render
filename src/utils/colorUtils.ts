@@ -1,3 +1,5 @@
+import { interpolateColors } from "remotion";
+
 /**
  * 颜色工具函数
  */
@@ -37,4 +39,52 @@ export function mixColors(color1: string, color2: string, ratio: number = 0.5): 
   const b = Math.round(rgb1[2] * (1 - ratio) + rgb2[2] * ratio);
   
   return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
+}
+
+/**
+ * 安全的颜色插值（强制校验输入并使用 interpolateColors）
+ */
+export function safeInterpolateColor(
+  input: number,
+  inputRange: number[],
+  outputRange: string[]
+): string {
+  if (!Array.isArray(inputRange) || !Array.isArray(outputRange)) {
+    throw new Error("safeInterpolateColor: inputRange/outputRange 需要数组");
+  }
+
+  if (inputRange.length !== outputRange.length) {
+    throw new Error("safeInterpolateColor: inputRange 与 outputRange 长度必须一致");
+  }
+
+  if (inputRange.some((v) => typeof v !== "number" || Number.isNaN(v))) {
+    throw new Error("safeInterpolateColor: inputRange 只能包含数字");
+  }
+
+  if (outputRange.some((v) => typeof v !== "string")) {
+    throw new Error("safeInterpolateColor: outputRange 只能包含颜色字符串");
+  }
+
+  return interpolateColors(input, inputRange, outputRange);
+}
+
+/**
+ * 将透明度插值封装为安全版本，返回 `rgba`，便于与透明渐变配合
+ */
+export function safeInterpolateAlpha(
+  input: number,
+  inputRange: number[],
+  outputRange: [number, number],
+  baseColor: string
+): string {
+  const [startAlpha, endAlpha] = outputRange;
+  if ([startAlpha, endAlpha].some((v) => typeof v !== "number" || Number.isNaN(v))) {
+    throw new Error("safeInterpolateAlpha: outputRange 必须是数字透明度");
+  }
+  const alpha = interpolateColors(
+    input,
+    inputRange,
+    [addAlpha(baseColor, startAlpha), addAlpha(baseColor, endAlpha)]
+  );
+  return alpha;
 }
