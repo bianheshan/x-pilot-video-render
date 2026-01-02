@@ -59,7 +59,13 @@ export default function Scene6() {
 
   // 左侧内容：手术模拟视图
   const SimulationView = () => (
-    <AbsoluteFill style={{ overflow: "hidden", background: "#F1F5F9" }}>
+    <div style={{ 
+      position: "relative",
+      width: "100%",
+      height: "100%",
+      overflow: "hidden", 
+      background: "#F1F5F9" 
+    }}>
       {/* 标题标记 */}
       <div style={{ 
         position: "absolute", 
@@ -138,12 +144,19 @@ export default function Scene6() {
           pointerEvents: "none"
         }} />
       </Sequence>
-    </AbsoluteFill>
+    </div>
   );
 
   // 右侧内容：步骤逻辑
   const StepsView = () => (
-    <AbsoluteFill style={{ padding: 60, justifyContent: "center" }}>
+    <div style={{ 
+      width: "100%",
+      height: "100%",
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "center",
+      padding: 60 
+    }}>
       <div style={{ marginBottom: 40 }}>
         <TitleCard 
           title="Acromioplasty" 
@@ -186,7 +199,7 @@ export default function Scene6() {
           layout="timeline"
         />
       </div>
-    </AbsoluteFill>
+    </div>
   );
 
   return (
