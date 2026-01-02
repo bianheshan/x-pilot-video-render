@@ -60,7 +60,8 @@ export default function Scene7() {
               subtitle="Restoring Joint Space & Mobility"
               layout="contained"
               align="center"
-              titleStyle={{ color: "#333333" }} // 使用 config.text_color
+              color="#000000"  // ← 修复：使用 color 而不是 titleStyle
+              showBackdrop={false}  // ← 关闭背景光晕，避免透明效果
             />
           </div>
         </Sequence>
