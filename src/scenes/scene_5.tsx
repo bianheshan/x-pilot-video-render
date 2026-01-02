@@ -1,185 +1,145 @@
 import React from "react";
-import { AbsoluteFill, useCurrentFrame, interpolate, Sequence } from "remotion";
+import { AbsoluteFill, useCurrentFrame, interpolate, Sequence, Img } from "remotion";
 import { 
-  LogicFlowPath, 
+  LogicComparisonSlider, 
   CardGlassmorphism, 
-  Subtitle,
-  SafeArea
+  Subtitle 
 } from "../components";
 import { useTheme } from "../contexts/ThemeContext";
 
 /**
- * Scene 5: The Salt March
+ * Scene 5: Bursectomy Step
+ * Target: Do: Observe the Bursectomy step.
+ * Duration: 7.0s (210 frames)
  * 
- * Target: Depict the Salt March as a strategic symbol.
- * Layout: Full-screen immersive with map visualization and floating stats.
- * Duration: 15.5 seconds (465 frames)
- * 
- * Components:
- * - Map Route (LogicFlowPath): Simulates the journey from Sabarmati to Dandi.
- * - Stats Card (CardGlassmorphism): Displays distance, volunteers, and duration.
+ * Visual Strategy:
+ * - Use LogicComparisonSlider to simulate the "cleaning" action of the bursectomy.
+ * - "Before" side represents the inflamed tissue (red overlay).
+ * - "After" side represents the clean anatomical view.
+ * - The slider movement mimics the shaver tool removing the tissue.
  */
 export default function Scene5() {
   const theme = useTheme();
   const frame = useCurrentFrame();
   
-  // Colors from config
-  // Primary: #FF9933 (Saffron/Orange)
-  // Secondary: #138808 (Green)
-  // Background: #FFFFFF (White) - using a paper-like tint #F9F9F9 for better contrast
-  const bgColor = "#F9F9F9";
-  const primaryColor = "#FF9933";
-  const secondaryColor = "#138808";
-  const textColor = "#2C2C2C";
-
-  // Animation Controls
-  const durationInFrames = 465; // 15.5s * 30fps
+  // Constants
+  const DURATION = 210; // 7 seconds
+  const BG_IMAGE = "https://cdn.shopify.com/s/files/1/0604/3536/5939/files/release_ant_480x480.jpg?v=1732546396";
+  const PRIMARY_COLOR = "#0077B6";
+  const ACCENT_COLOR = "#E63946";
   
-  // 1. Map Route Animation (Draws progressively)
-  // The LogicFlowPath component handles internal animation, but we can control its container
-  const mapOpacity = interpolate(frame, [0, 30], [0, 1], { extrapolateRight: "clamp" });
-  
-  // 2. Stats Card Animation (Slide in from right)
-  const statsSlideX = interpolate(frame, [45, 75], [100, 0], { extrapolateRight: "clamp" });
-  const statsOpacity = interpolate(frame, [45, 75], [0, 1], { extrapolateRight: "clamp" });
+  // Animation for the card entry
+  const cardOpacity = interpolate(frame, [10, 30], [0, 1], { extrapolateRight: "clamp" });
+  const cardSlide = interpolate(frame, [10, 30], [50, 0], { extrapolateRight: "clamp" });
 
-  // Define the route steps for the "Map"
-  // Using custom coordinates to simulate a path down the coast of Gujarat
-  const routeSteps = [
-    { 
-      id: "sabarmati", 
-      label: "Sabarmati Ashram", 
-      type: "start", 
-      x: 300, 
-      y: 150,
-      description: "March 12, 1930" 
-    },
-    { 
-      id: "aslali", 
-      label: "Aslali", 
-      type: "process", 
-      x: 350, 
-      y: 300 
-    },
-    { 
-      id: "navsari", 
-      label: "Navsari", 
-      type: "process", 
-      x: 450, 
-      y: 500 
-    },
-    { 
-      id: "dandi", 
-      label: "Dandi Coast", 
-      type: "end", 
-      x: 550, 
-      y: 650,
-      description: "April 6, 1930" 
-    }
-  ];
+  // Custom "Before" content: Image with red inflamed overlay
+  const InflamedView = () => (
+    <div style={{ width: "100%", height: "100%", position: "relative" }}>
+      <Img 
+        src={BG_IMAGE} 
+        style={{ width: "100%", height: "100%", objectFit: "cover" }} 
+      />
+      <div style={{ 
+        position: "absolute", 
+        top: 0, 
+        left: 0, 
+        right: 0, 
+        bottom: 0, 
+        backgroundColor: ACCENT_COLOR, 
+        opacity: 0.4,
+        mixBlendMode: "multiply",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center"
+      }}>
+        <div style={{
+          color: "white",
+          fontWeight: "bold",
+          fontSize: 32,
+          textShadow: "0 2px 4px rgba(0,0,0,0.5)",
+          opacity: 0.8
+        }}>
+          Inflamed Tissue
+        </div>
+      </div>
+    </div>
+  );
 
-  const routeConnections = [
-    { from: "sabarmati", to: "aslali", label: "Start", dashed: true },
-    { from: "aslali", to: "navsari", label: "Villages", dashed: true },
-    { from: "navsari", to: "dandi", label: "Arrival", dashed: true }
-  ];
+  // Custom "After" content: Clean image
+  const CleanView = () => (
+    <div style={{ width: "100%", height: "100%", position: "relative" }}>
+      <Img 
+        src={BG_IMAGE} 
+        style={{ width: "100%", height: "100%", objectFit: "cover" }} 
+      />
+      <div style={{
+        position: "absolute",
+        bottom: 200,
+        right: 60,
+        color: "white",
+        fontWeight: "bold",
+        fontSize: 24,
+        textShadow: "0 2px 4px rgba(0,0,0,0.5)",
+        opacity: 0.6
+      }}>
+        Clean Surface
+      </div>
+    </div>
+  );
 
   return (
-    <AbsoluteFill style={{ background: bgColor }}>
+    <AbsoluteFill style={{ backgroundColor: theme.colors.background }}>
       
-      {/* Background Texture Effect (Paper grain simulation) */}
-      <AbsoluteFill style={{ 
-        opacity: 0.1, 
-        backgroundImage: `radial-gradient(${theme.colors.textSecondary} 1px, transparent 1px)`,
-        backgroundSize: "20px 20px" 
-      }} />
+      {/* 1. Main Visual: Comparison Slider mimicking the Shaver Tool */}
+      {/* The slider wipes from left to right, "removing" the red inflamed layer */}
+      <Sequence from={0} durationInFrames={DURATION}>
+        <LogicComparisonSlider 
+          title="" // Hide default title to use custom card
+          beforeContent={<InflamedView />}
+          afterContent={<CleanView />}
+          beforeLabel="Inflamed Bursa"
+          afterLabel="Decompressed"
+          initialPosition={0.05} // Start mostly covered (red)
+          autoAnimate={true} // Automatically animates to 100%
+          handleColor={theme.colors.text}
+        />
+      </Sequence>
 
-      <SafeArea>
-        {/* Layer 1: The Map Journey */}
-        <div style={{ 
-          opacity: mapOpacity, 
-          position: "absolute", 
-          top: 0, 
-          left: 0, 
-          width: "100%", 
-          height: "100%",
-          transform: "scale(0.9) translateX(-100px)" // Shift left to make room for stats
-        }}>
-          <LogicFlowPath 
-            title="The Salt March Route"
-            subtitle="Civil Disobedience Movement (1930)"
-            steps={routeSteps}
-            connections={routeConnections}
-            layout="custom"
-            theme="light"
-          />
-        </div>
-
-        {/* Layer 2: Floating Stats Card */}
+      {/* 2. Info Card: Step Description */}
+      <Sequence from={10} durationInFrames={DURATION - 10}>
         <div style={{
           position: "absolute",
-          right: 60,
-          top: "30%",
-          transform: `translateX(${statsSlideX}px)`,
-          opacity: statsOpacity,
-          width: 400
+          top: 60,
+          left: 60,
+          opacity: cardOpacity,
+          transform: `translateY(${cardSlide}px)`,
+          zIndex: 10
         }}>
-          <CardGlassmorphism
-            title="March Statistics"
-            icon="👣"
-            accentColor={secondaryColor}
-            eyebrow="A Strategic Symbol"
-            content={
-              <div style={{ 
-                display: "flex", 
-                flexDirection: "column", 
-                gap: 20,
-                marginTop: 10
-              }}>
-                {/* Custom Stat Row 1 */}
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <span style={{ fontSize: 18, color: theme.colors.textSecondary }}>Distance</span>
-                  <span style={{ fontSize: 24, fontWeight: "bold", color: primaryColor }}>240 Miles</span>
-                </div>
-                
-                {/* Custom Stat Row 2 */}
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <span style={{ fontSize: 18, color: theme.colors.textSecondary }}>Volunteers</span>
-                  <span style={{ fontSize: 24, fontWeight: "bold", color: textColor }}>78</span>
-                </div>
-                
-                {/* Custom Stat Row 3 */}
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <span style={{ fontSize: 18, color: theme.colors.textSecondary }}>Duration</span>
-                  <span style={{ fontSize: 24, fontWeight: "bold", color: secondaryColor }}>24 Days</span>
-                </div>
-
-                <div style={{ 
-                  marginTop: 10, 
-                  paddingTop: 15, 
-                  borderTop: "1px solid rgba(0,0,0,0.1)",
-                  fontSize: 14,
-                  fontStyle: "italic",
-                  color: theme.colors.textSecondary
-                }}>
-                  "I want world sympathy in this battle of Right against Might."
-                </div>
-              </div>
-            }
+          <CardGlassmorphism 
+            title="Step 1: Bursectomy"
+            content="Removal of inflamed bursal tissue to visualize the rotator cuff."
+            icon="trash-2"
+            accentColor={ACCENT_COLOR}
+            eyebrow="Surgical Procedure"
+            cardStyle={{
+              backdropFilter: "blur(12px)",
+              backgroundColor: "rgba(255, 255, 255, 0.85)",
+              border: `1px solid ${PRIMARY_COLOR}40`,
+              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)"
+            }}
           />
         </div>
+      </Sequence>
 
-        {/* Layer 3: Subtitles */}
-        <div style={{ position: "absolute", bottom: 50, left: 0, width: "100%" }}>
-          <Subtitle
-            text="In 1930, Gandhi launched the Civil Disobedience Movement with the Salt March. Walking 240 miles to Dandi with 78 volunteers, he ceremonially broke the salt law, a symbol of British oppression that united the rich and poor."
-            startFrame={0} // Relative to scene start
-            durationInFrames={465} // Full scene duration
-            emphasisWords={["Salt March", "240 miles", "78 volunteers", "united"]}
-          />
-        </div>
-
-      </SafeArea>
+      {/* 3. Subtitles */}
+      <Sequence from={0} durationInFrames={DURATION}>
+        <Subtitle 
+          text="First, a bursectomy is performed. A shaver carefully removes the inflamed tissue to clear the view."
+          startFrame={0}
+          durationInFrames={210} // Full scene duration
+        />
+      </Sequence>
+      
     </AbsoluteFill>
   );
 }

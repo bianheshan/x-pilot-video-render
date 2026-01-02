@@ -1,193 +1,168 @@
 import React from "react";
-import { AbsoluteFill, useCurrentFrame, interpolate, Sequence, Img } from "remotion";
+import { AbsoluteFill, useCurrentFrame, interpolate, Sequence } from "remotion";
 import { 
-  AnimatedSplitScreen, 
-  LogicVennDynamic, 
-  StatRollingCounter, 
+  IndTerrainMap, 
   CardGlassmorphism, 
   Subtitle 
 } from "../components";
 import { useTheme } from "../contexts/ThemeContext";
 
 /**
- * Scene 4: The Non-Cooperation Movement
- * Target: Explain the Non-Cooperation Movement strategy: Khilafat unity and economic boycott.
+ * 场景索引：3
+ * 场景 ID：scene_4
+ * 场景目标：Know: See the pathology from the surgeon's perspective.
+ * 布局方式：中心聚焦 (Simulated Arthroscopic View)
+ * 持续时间：5.5 秒 (165 帧)
  * 
- * Layout: Split Screen (Vertical)
- * - Top: Visual Metaphor for Unity (Venn Diagram merging)
- * - Bottom: Economic Impact (Stats + Image)
+ * 组件清单：
+ * - S4_C1: 模拟关节镜视野 (使用 IndTerrainMap 模拟组织表面)
+ * - S4_C2: 信息卡片 (CardGlassmorphism)
  * 
- * Duration: 15 seconds (450 frames)
+ * 视觉策略：
+ * 使用圆形遮罩 + 黑色背景模拟内窥镜/关节镜的视野。
+ * 使用 IndTerrainMap 模拟红肿的滑囊组织表面。
  */
 export default function Scene4() {
   const theme = useTheme();
   const frame = useCurrentFrame();
   
-  // Colors from JSON config
-  const primaryColor = "#FF9933"; // Saffron
-  const secondaryColor = "#138808"; // Green
-  const accentColor = "#000080"; // Navy
-  const textColor = "#2C2C2C";
+  // 场景配置
+  const durationInFrames = 165; // 5.5s * 30fps
   
-  // Timeline Control
-  // 0-7s: Focus on Unity (Top)
-  // 7-15s: Focus on Boycott (Bottom)
-  const unityDuration = 210; // 7s
+  // 颜色配置 (覆盖默认主题以适应医学内窥镜风格)
+  const inflamedColor = "#FF4444"; // 发炎组织的红色
+  const tissueColor = "#FFB6C1";   // 正常组织的粉色
   
-  // --- Top Section: Unity Metaphor (Venn Diagram) ---
-  // Animate intersection size to simulate merging
-  const intersectionSize = interpolate(
+  // 动画 1: 关节镜视野 "光圈打开" (Iris Open)
+  // 通过 clipPath 实现圆形展开效果
+  const irisRadius = interpolate(
     frame,
-    [20, 150],
-    [0, 50], // From separate to merged
-    { extrapolateRight: "clamp" }
-  );
-
-  const TopContent = () => (
-    <div style={{ 
-      width: "100%", 
-      height: "100%", 
-      display: "flex", 
-      flexDirection: "column", 
-      justifyContent: "center", 
-      alignItems: "center",
-      padding: 40
-    }}>
-      <h2 style={{
-        fontFamily: theme.fonts.heading,
-        color: textColor,
-        fontSize: 32,
-        marginBottom: 20,
-        opacity: interpolate(frame, [10, 40], [0, 1])
-      }}>
-        Hindu-Muslim Unity
-      </h2>
-      <div style={{ width: "100%", height: 300 }}>
-        <LogicVennDynamic 
-          sets={[
-            { name: "Khilafat", size: 100, color: secondaryColor },
-            { name: "Swaraj", size: 100, color: primaryColor }
-          ]}
-          intersections={[
-            { sets: [0, 1], size: intersectionSize }
-          ]}
-        />
-      </div>
-      <p style={{
-        fontFamily: theme.fonts.body,
-        color: accentColor,
-        fontSize: 24,
-        marginTop: 10,
-        fontWeight: "bold",
-        opacity: interpolate(frame, [100, 130], [0, 1])
-      }}>
-        Non-Cooperation Alliance
-      </p>
-    </div>
-  );
-
-  // --- Bottom Section: Boycott Impact ---
-  // Slide up animation for entrance
-  const bottomSlideUp = interpolate(
-    frame,
-    [unityDuration, unityDuration + 30],
-    [100, 0],
+    [0, 45],
+    [0, 50], // 0% -> 50% (半径)
     { extrapolateRight: "clamp" }
   );
   
-  const bottomOpacity = interpolate(
+  // 动画 2: 镜头推进 (Dolly In)
+  // 放大内部的组织贴图，模拟摄像头向前移动
+  const cameraZoom = interpolate(
     frame,
-    [unityDuration, unityDuration + 30],
-    [0, 1],
+    [0, 165],
+    [1, 1.4],
     { extrapolateRight: "clamp" }
   );
 
-  const BottomContent = () => (
-    <div style={{ 
-      width: "100%", 
-      height: "100%", 
-      display: "flex", 
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-evenly",
-      padding: "20px 60px",
-      transform: `translateY(${bottomSlideUp}px)`,
-      opacity: bottomOpacity
-    }}>
-      {/* Left: Statistics */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
-        <StatRollingCounter 
-          targetValue={57}
-          prefix="Rs "
-          suffix=" Cr"
-          label="Foreign Cloth Imports"
-          durationInFrames={90}
-          seed="boycott-stats"
-        />
-        <div style={{ 
-          marginTop: 10, 
-          color: "#d32f2f", 
-          fontFamily: theme.fonts.body,
-          fontSize: 18,
-          fontWeight: 600,
-          background: "rgba(255,255,255,0.8)",
-          padding: "4px 12px",
-          borderRadius: 4
-        }}>
-          📉 Dropped from 102 Crore
-        </div>
-      </div>
-
-      {/* Divider */}
-      <div style={{ width: 2, height: "60%", background: "rgba(0,0,0,0.1)", margin: "0 40px" }} />
-
-      {/* Right: Image */}
-      <div style={{ flex: 1 }}>
-        <CardGlassmorphism 
-          title="Economic Boycott"
-          content={
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <Img 
-                src="https://server.x-pilot.ai/static/meta-doc/zip/6848983ab881878abaadf19c18e0cf86/images/48203247492598e425b9506a4d3671493b19efa9813ae0448be492e09e4fbce5.jpg"
-                style={{ width: "100%", borderRadius: 8, height: 160, objectFit: "cover" }}
-              />
-              <span style={{ fontSize: 14, opacity: 0.8 }}>July 1922: Bonfire of foreign cloth</span>
-            </div>
-          }
-          accentColor={primaryColor}
-        />
-      </div>
-    </div>
-  );
+  // 动画 3: 卡片入场
+  const cardOpacity = interpolate(frame, [30, 60], [0, 1], { extrapolateRight: "clamp" });
+  const cardY = interpolate(frame, [30, 60], [50, 0], { extrapolateRight: "clamp" });
 
   return (
-    <AbsoluteFill style={{ 
-      background: "linear-gradient(to bottom, #F4E4BC, #FFFFFF)"
-    }}>
-      {/* Main Layout: Vertical Split Screen */}
-      <AnimatedSplitScreen 
-        left={<TopContent />}
-        right={<BottomContent />}
-        direction="vertical"
-        ratio={0.45} // Top takes 45%, Bottom takes 55%
-        animation="slide"
-        animationDuration={30}
-        showDivider={true}
-        labelLeft="Political Unity"
-        labelRight="Economic Impact"
-      />
-
-      {/* Subtitles */}
-      <Subtitle 
-        text="To build a broad movement, Gandhi linked the Khilafat issue to Swaraj, uniting Hindus and Muslims."
-        startFrame={0}
-        durationInFrames={210}
-      />
+    <AbsoluteFill style={{ backgroundColor: "#000000" }}>
       
-      <Subtitle 
-        text="The Non-Cooperation Movement began in 1921. Foreign goods were boycotted, and the import of foreign cloth halved."
-        startFrame={210}
-        durationInFrames={240}
+      {/* 1. 关节镜视野模拟区域 */}
+      <AbsoluteFill style={{
+        justifyContent: "center",
+        alignItems: "center",
+        zIndex: 1
+      }}>
+        {/* 镜头容器 */}
+        <div style={{
+          width: 900,
+          height: 900,
+          position: "relative",
+          // 使用 clipPath 模拟圆形的关节镜视野
+          clipPath: `circle(${irisRadius}% at center)`,
+          backgroundColor: "#1a0505", // 深红色背景底色
+          boxShadow: "inset 0 0 100px rgba(0,0,0,0.9)", // 内部暗角 (Vignette)
+          borderRadius: "50%", // 确保容器本身也是圆的
+          overflow: "hidden"
+        }}>
+          
+          {/* 内部组织模拟 - 使用 IndTerrainMap 模拟凹凸不平的滑囊表面 */}
+          <div style={{
+            width: "100%",
+            height: "100%",
+            transform: `scale(${cameraZoom})`,
+            transformOrigin: "center center"
+          }}>
+            <IndTerrainMap 
+              heightData={[
+                [10, 15, 20, 25, 20, 15, 10],
+                [15, 25, 35, 40, 35, 25, 15],
+                [20, 35, 50, 60, 50, 35, 20], // 中间隆起，模拟肿胀
+                [25, 40, 60, 70, 60, 40, 25],
+                [20, 35, 50, 60, 50, 35, 20],
+                [15, 25, 35, 40, 35, 25, 15],
+                [10, 15, 20, 25, 20, 15, 10]
+              ]}
+              showContours={true}
+              colorScheme="heatmap" // 热力图配色正好符合"发炎"的视觉隐喻 (红/黄)
+            />
+          </div>
+
+          {/* 叠加层：模拟湿润反光和组织质感 */}
+          <AbsoluteFill style={{
+            background: "radial-gradient(circle at 30% 30%, rgba(255,255,255,0.2), transparent 40%)",
+            mixBlendMode: "overlay",
+            pointerEvents: "none"
+          }} />
+          
+          {/* 叠加层：严重的暗角效果 (Vignette) */}
+          <AbsoluteFill style={{
+            background: "radial-gradient(circle, transparent 50%, #000000 100%)",
+            pointerEvents: "none"
+          }} />
+          
+          {/* 叠加层：模拟发炎的红色脉动 */}
+          <AbsoluteFill style={{
+            background: `radial-gradient(circle, ${inflamedColor}22, transparent)`,
+            opacity: interpolate(frame % 60, [0, 30, 60], [0.3, 0.6, 0.3]),
+            mixBlendMode: "color-dodge"
+          }} />
+          
+          {/* 准星/刻度 (增加医学仪器的感觉) */}
+          <div style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: 40,
+            height: 40,
+            border: "2px solid rgba(255,255,255,0.3)",
+            borderRadius: "50%",
+            opacity: 0.5
+          }} />
+        </div>
+      </AbsoluteFill>
+
+      {/* 2. 信息卡片 - 位于底部 */}
+      <AbsoluteFill style={{ zIndex: 10, pointerEvents: "none" }}>
+        <div style={{
+          position: "absolute",
+          bottom: 180,
+          left: 0,
+          right: 0,
+          display: "flex",
+          justifyContent: "center",
+          opacity: cardOpacity,
+          transform: `translateY(${cardY}px)`
+        }}>
+          <div style={{ pointerEvents: "auto" }}>
+            <CardGlassmorphism
+              title="Arthroscopic View"
+              content="Inflamed Subacromial Bursa Visualization"
+              icon="👁️"
+              accentColor={theme.colors.accent} // 使用配置中的红色 #E63946
+              variant="pressed"
+            />
+          </div>
+        </div>
+      </AbsoluteFill>
+
+      {/* 3. 字幕 */}
+      <Subtitle
+        text="An arthroscope is introduced, revealing the inflamed subacromial bursa causing the pain."
+        startFrame={0}
+        durationInFrames={durationInFrames}
       />
     </AbsoluteFill>
   );

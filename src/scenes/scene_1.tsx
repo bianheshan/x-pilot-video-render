@@ -1,140 +1,140 @@
 import React from "react";
-import { AbsoluteFill, useCurrentFrame, interpolate, Img, Sequence } from "remotion";
+import { AbsoluteFill, useCurrentFrame, interpolate, Sequence } from "remotion";
 import { 
   SplitScreen, 
+  CardGlassmorphism, 
   ListStaggeredEntry, 
-  CardNeumorphism, 
-  TitleCinematicIntro,
   Subtitle 
 } from "../components";
 import { useTheme } from "../contexts/ThemeContext";
 
 /**
- * Scene 1: Impact of WWI
- * Target: Explain the economic and political impact of WWI as the catalyst for nationalism.
- * Layout: Split Screen (Left: Key Stats, Right: Historical Image)
- * Duration: 14.5s (435 frames)
+ * Scene 1: Anatomy - Shoulder Joint Structure
+ * Target: Identify the key anatomical structures of the shoulder.
+ * 
+ * Layout: SplitScreen
+ * - Left: Introduction Card (Anatomy)
+ * - Right: Anatomical Structures List (Simulating the labels of the 3D model)
+ * 
+ * Duration: 6.5 seconds (195 frames)
  */
 export default function Scene1() {
   const theme = useTheme();
   const frame = useCurrentFrame();
 
-  // Config from JSON
-  const durationInFrames = 435; // 14.5s * 30fps
-  const primaryColor = "#FF9933";
-  const secondaryColor = "#138808";
-  const backgroundColor = "#EFE6D5"; // Historical paper color
-  const textColor = "#2C2C2C";
+  // Colors from JSON config
+  const primaryColor = "#0077B6";
+  const secondaryColor = "#90E0EF";
+  const accentColor = "#E63946";
+  const textColor = "#333333";
+  const backgroundColor = "#F0F8FF";
 
-  // Animation for Left Column (Slide In)
-  const leftOpacity = interpolate(frame, [0, 20], [0, 1], { extrapolateRight: "clamp" });
-  const leftTranslateX = interpolate(frame, [0, 20], [-50, 0], { extrapolateRight: "clamp" });
+  // Animation timing
+  // Scene duration: 6.5s = 195 frames
+  
+  // Left side animation (Title)
+  const leftOpacity = interpolate(frame, [0, 30], [0, 1], { extrapolateRight: "clamp" });
+  const leftSlide = interpolate(frame, [0, 30], [-50, 0], { extrapolateRight: "clamp" });
 
-  // Animation for Right Column (Fade In Slow)
-  const rightOpacity = interpolate(frame, [10, 40], [0, 1], { extrapolateRight: "clamp" });
-  const rightScale = interpolate(frame, [10, 40], [0.95, 1], { extrapolateRight: "clamp" });
+  // Right side animation (List) starts slightly later
+  const rightOpacity = interpolate(frame, [20, 50], [0, 1], { extrapolateRight: "clamp" });
+  const rightSlide = interpolate(frame, [20, 50], [50, 0], { extrapolateRight: "clamp" });
 
-  // Left Content: Key Stats List
-  const LeftContent = () => (
-    <div style={{ 
-      padding: 40, 
-      height: "100%", 
-      display: "flex", 
-      flexDirection: "column", 
-      justifyContent: "center",
-      opacity: leftOpacity,
-      transform: `translateX(${leftTranslateX}px)`
-    }}>
-      <div style={{ marginBottom: 40 }}>
-        <TitleCinematicIntro 
-          text="Impact of World War I"
-          subtitle="The Catalyst for Nationalism"
-          layout="contained"
-        />
-      </div>
+  return (
+    <AbsoluteFill style={{ backgroundColor }}>
       
-      <ListStaggeredEntry 
-        title="Economic Hardships"
-        items={[
-          { 
-            title: "Defense Expenditure", 
-            description: "Huge Increase ⬆",
-            icon: "🛡️",
-            accentColor: "#d32f2f" // Red for alarm
-          },
-          { 
-            title: "Taxes", 
-            description: "Income Tax Introduced",
-            icon: "💰",
-            accentColor: primaryColor
-          },
-          { 
-            title: "Prices (1913-1918)", 
-            description: "Doubled 📈",
-            icon: "🏷️",
-            accentColor: secondaryColor
-          }
-        ]}
-        staggerDelay={15}
-      />
-    </div>
-  );
-
-  // Right Content: Historical Image
-  const RightContent = () => (
-    <div style={{ 
-      padding: 40, 
-      height: "100%", 
-      display: "flex", 
-      alignItems: "center", 
-      justifyContent: "center",
-      opacity: rightOpacity,
-      transform: `scale(${rightScale})`
-    }}>
-      <CardNeumorphism 
-        title="Forced Recruitment"
-        eyebrow="1918 Archives"
-        content={
-          <div style={{ position: "relative", overflow: "hidden", borderRadius: 8 }}>
-            <Img 
-              src="http://35.232.154.66:5125/files/tools/4569de06-613d-4df8-9af2-0107af1f072c.jpg?timestamp=1767022369&nonce=1b773d30675e663301bf6991c093a12a&sign=6lnyxo6-iu-ATG4xzGWvMVUv7asVn7hsKQ-lC0_K4DY="
-              style={{ 
-                width: "100%", 
-                height: "auto", 
-                display: "block",
-                filter: "sepia(0.3) contrast(1.1)" // Historical effect
+      {/* Main Layout: SplitScreen */}
+      <SplitScreen
+        ratio={0.4}
+        gap={40}
+        showDivider={true}
+        dividerWidth={2}
+        
+        // Left Content: Title Information
+        left={
+          <div style={{ 
+            opacity: leftOpacity, 
+            transform: `translateX(${leftSlide}px)`,
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center"
+          }}>
+            <CardGlassmorphism
+              title="Anatomy"
+              content="Shoulder Joint Structure"
+              icon="🦴"
+              eyebrow="Part 01"
+              accentColor={primaryColor}
+              cardStyle={{
+                background: "rgba(255, 255, 255, 0.7)",
+                backdropFilter: "blur(10px)",
+                border: `1px solid ${secondaryColor}`,
+                boxShadow: "0 8px 32px rgba(0, 119, 182, 0.1)"
               }}
             />
           </div>
         }
-        footer="Villagers were called upon to supply soldiers"
-        accentColor={textColor}
-      />
-    </div>
-  );
 
-  return (
-    <AbsoluteFill style={{ backgroundColor }}>
-      {/* Main Layout */}
-      <SplitScreen 
-        left={<LeftContent />}
-        right={<RightContent />}
-        ratio={0.5}
-        showDivider={true}
-        leftStyle={{ backgroundColor: "transparent" }}
-        rightStyle={{ backgroundColor: "rgba(0,0,0,0.03)" }}
+        // Right Content: Structural Breakdown (Simulating the 3D labels)
+        right={
+          <div style={{ 
+            opacity: rightOpacity, 
+            transform: `translateX(${rightSlide}px)`,
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center"
+          }}>
+             <ListStaggeredEntry
+              title="Key Structures"
+              items={[
+                { 
+                  title: "Humeral Head", 
+                  description: "The ball of the joint",
+                  icon: "⚪",
+                  accentColor: primaryColor 
+                },
+                { 
+                  title: "Glenoid", 
+                  description: "The socket of the shoulder blade",
+                  icon: "🛡️",
+                  accentColor: primaryColor
+                },
+                { 
+                  title: "Acromion", 
+                  description: "The bony roof above the joint",
+                  icon: "🏠",
+                  accentColor: accentColor // Highlight as it's key to impingement
+                },
+                { 
+                  title: "Rotator Cuff", 
+                  description: "Group of muscles and tendons",
+                  icon: "💪",
+                  accentColor: secondaryColor
+                }
+              ]}
+              staggerDelay={15}
+              cardStyle={{
+                background: "white",
+                color: textColor,
+                borderLeft: `4px solid ${primaryColor}`
+              }}
+            />
+          </div>
+        }
       />
 
-      {/* Subtitle Overlay */}
-      <Sequence from={0} durationInFrames={durationInFrames}>
-        <Subtitle 
-          text="Modern nationalism in India arose from the anti-colonial struggle. The First World War created a new economic situation: defense expenditure soared, taxes increased, and prices doubled between 1913 and 1918."
+      {/* Subtitles */}
+      <Sequence from={0} durationInFrames={195}>
+        <Subtitle
+          text="The shoulder joint is a complex structure where the humeral head meets the glenoid."
           startFrame={0}
-          durationInFrames={durationInFrames}
-          variant="solid"
-          emphasisWords={["First World War", "defense expenditure", "taxes increased", "prices doubled"]}
+          durationInFrames={195}
+          variant="clean"
         />
       </Sequence>
+
     </AbsoluteFill>
   );
 }

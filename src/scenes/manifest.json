@@ -7,44 +7,44 @@
   "scenes": [
     {
       "id": "scene_1",
-      "name": "Explain the economic and political impact of WWI as the catalyst for nationalism.",
-      "durationInFrames": 435,
+      "name": "Know: Identify the key anatomical structures of the shoulder.",
+      "durationInFrames": 195,
       "component": "scene_1.tsx"
     },
     {
       "id": "scene_2",
-      "name": "Define Satyagraha and list the early experiments.",
-      "durationInFrames": 420,
+      "name": "Know: Understand the mechanism of impingement.",
+      "durationInFrames": 225,
       "component": "scene_2.tsx"
     },
     {
       "id": "scene_3",
-      "name": "Visualize the oppression of the Rowlatt Act and the horror of Jallianwalla Bagh.",
-      "durationInFrames": 435,
+      "name": "Know: Visualize the minimally invasive entry points.",
+      "durationInFrames": 150,
       "component": "scene_3.tsx"
     },
     {
       "id": "scene_4",
-      "name": "Explain the Non-Cooperation Movement strategy: Khilafat unity and economic boycott.",
-      "durationInFrames": 450,
+      "name": "Know: See the pathology from the surgeon's perspective.",
+      "durationInFrames": 165,
       "component": "scene_4.tsx"
     },
     {
       "id": "scene_5",
-      "name": "Depict the Salt March as a strategic symbol.",
-      "durationInFrames": 465,
+      "name": "Do: Observe the Bursectomy step.",
+      "durationInFrames": 210,
       "component": "scene_5.tsx"
     },
     {
       "id": "scene_6",
-      "name": "Illustrate cultural nationalism.",
-      "durationInFrames": 450,
+      "name": "Do: Observe the Acromioplasty (Bone smoothing) step.",
+      "durationInFrames": 210,
       "component": "scene_6.tsx"
     },
     {
       "id": "scene_7",
-      "name": "Conclusion and Quit India reference.",
-      "durationInFrames": 420,
+      "name": "Believe: Visualize the successful outcome.",
+      "durationInFrames": 195,
       "component": "scene_7.tsx"
     }
   ]

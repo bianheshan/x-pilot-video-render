@@ -12,6 +12,9 @@ export { MasonryLayout } from "./MasonryLayout";
 export { CircularLayout } from "./CircularLayout";
 export { TimelineLayout } from "./TimelineLayout";
 
+// 相机运镜（新增 - 电影级镜头运动）
+export { CameraRig } from "./CameraRig";
+
 // 类型导出
 export type { GridItem } from "./GridLayout";
 export type { Layer } from "./LayeredLayout";

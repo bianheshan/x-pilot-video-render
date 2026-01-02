@@ -25,10 +25,11 @@ export const Title3DFloating: React.FC<Title3DFloatingProps> = ({
   // 使用主题颜色或传入的颜色
   const textColor = color || theme.colors.primary;
 
-  // 旋转动画
+  // 旋转动画（防护：rotationSpeed 必须 > 0，否则用默认值 1）
+  const safeRotationSpeed = rotationSpeed > 0 ? rotationSpeed : 1;
   const rotateY = interpolate(
     frame,
-    [0, 300 / rotationSpeed],
+    [0, 300 / safeRotationSpeed],
     [0, 360],
     {
       extrapolateRight: "extend",

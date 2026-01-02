@@ -1,113 +1,165 @@
 import React from "react";
-import { AbsoluteFill, useCurrentFrame, interpolate, spring, useVideoConfig, Sequence } from "remotion";
+import { AbsoluteFill, useCurrentFrame, interpolate, Sequence } from "remotion";
 import { 
-  CardGlassmorphism, 
-  IndDroneSwarm, 
-  Subtitle 
+  LogicComparisonSlider, 
+  Subtitle, 
+  TitleCinematicIntro,
+  SafeArea 
 } from "../components";
 import { useTheme } from "../contexts/ThemeContext";
 
 /**
- * Scene 7: Conclusion and Quit India reference.
- * Target: Illustrate the convergence of diverse groups into national unity and the final Quit India movement.
+ * 场景索引：6 (Scene 7)
+ * 场景 ID：scene_7
+ * 场景目标：Believe: Visualize the successful outcome.
+ * 布局方式：Before/After Comparison
+ * 持续时间：6.5 秒 (195 帧)
  * 
- * Components:
- * - S7_C1_Unity_Particles: IndDroneSwarm (Simulating people converging)
- * - S7_C2_Quit_India: CardGlassmorphism (Info card)
- * 
- * Duration: 14.0 seconds (420 frames)
+ * 组件清单：
+ * - S7_C1: before-after-comparison (LogicComparisonSlider)
  */
 export default function Scene7() {
   const theme = useTheme();
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-
-  // Color Palette from JSON
-  const primaryColor = "#FF9933"; // Saffron
-  const secondaryColor = "#138808"; // Green
-  const accentColor = "#000080"; // Navy Blue
-  const whiteColor = "#FFFFFF";
-
-  // Animation for Card (Scale Up Bounce)
-  // Delay card appearance slightly to let particles form first
-  const cardDelay = 60; 
-  const cardScale = spring({
-    frame: frame - cardDelay,
-    fps,
-    config: { damping: 12, stiffness: 100, mass: 1 },
-    durationInFrames: 30
-  });
-
-  const cardOpacity = interpolate(
+  
+  // 场景配置
+  const durationInFrames = 195; // 6.5s * 30fps
+  
+  // 颜色配置 (来自 JSON config)
+  const background = "radial-gradient(circle, #FFFFFF, #E3F2FD)";
+  const primaryColor = "#0077B6";
+  const secondaryColor = "#90E0EF";
+  
+  // 动画控制
+  const opacity = interpolate(
     frame,
-    [cardDelay, cardDelay + 20],
+    [0, 20],
     [0, 1],
     { extrapolateRight: "clamp" }
   );
 
-  // Background Gradient Animation (Subtle pulse)
-  const gradientPulse = interpolate(frame, [0, 210, 420], [0.8, 1.2, 0.8]);
+  const slideUp = interpolate(
+    frame,
+    [0, 30],
+    [50, 0],
+    { extrapolateRight: "clamp" }
+  );
+
+  // 图片资源
+  const beforeImage = "http://35.232.154.66:5125/files/tools/8b56efab-19f6-4003-bcfd-067c822a5a3e.jpg?timestamp=1767338040&nonce=b1921f616287bff3e0631c7836806cfb&sign=7M72f63YvooUUlbXd9lPH9BVhf0HC3HnLJ92ZgF0LTA=";
+  const afterImage = "http://35.232.154.66:5125/files/tools/2544e7aa-2f5e-4b05-8ceb-1bafeb22e863.jpg?timestamp=1767338040&nonce=df5f0b916847cdf58f9016d7f2846a76&sign=LWBkZdCjVhG0DuLVwqftPmLvYjkZUNODnK_HvbT1ufY=";
 
   return (
-    <AbsoluteFill
-      style={{
-        // Radial gradient representing the Indian Flag tricolor metaphorically
-        background: `radial-gradient(circle at center, ${primaryColor}40 0%, ${whiteColor} 40%, ${secondaryColor}40 100%)`,
-        backgroundSize: "200% 200%",
-      }}
-    >
-      {/* 
-        Component 1: Unity Particles (IndDroneSwarm)
-        Visual Metaphor: Diverse groups (particles) converging to form a unified nation.
-        Using IndDroneSwarm to simulate the organic movement of the masses.
-      */}
-      <Sequence from={0} durationInFrames={420}>
-        <div style={{ opacity: 0.6 }}>
-          <IndDroneSwarm 
-            droneCount={80}
-            swarmRadius={350}
-            showTrails={true}
-            formationType="sphere" // Sphere represents Unity/Wholeness
-            color={accentColor} // Chakra blue for the particles
-          />
-        </div>
-      </Sequence>
-
-      {/* 
-        Component 2: Quit India Info Card (CardGlassmorphism)
-        Visual Anchor: The final political movement.
-      */}
-      <Sequence from={cardDelay} durationInFrames={420 - cardDelay}>
-        <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
-          <div style={{ 
-            transform: `scale(${Math.max(0, cardScale)})`, 
-            opacity: cardOpacity 
-          }}>
-            <CardGlassmorphism
-              title="1942: Quit India Movement"
-              content="Mass movement demanding immediate transfer of power."
-              icon="✊" // Fist icon for resistance/strength
-              eyebrow="The Final Push"
-              accentColor={primaryColor}
-              variant="raised"
-              cardStyle={{
-                width: 500,
-                backdropFilter: "blur(12px)",
-                background: "rgba(255, 255, 255, 0.65)",
-                border: `1px solid ${primaryColor}`,
-                boxShadow: `0 10px 30px -5px ${accentColor}30`
-              }}
+    <AbsoluteFill style={{ background }}>
+      <SafeArea>
+        {/* 标题区域 - 增加上下文 */}
+        <Sequence from={0} durationInFrames={durationInFrames}>
+          <div style={{ opacity, transform: `translateY(${slideUp}px)` }}>
+            <TitleCinematicIntro
+              text="Surgical Outcome"
+              subtitle="Restoring Joint Space & Mobility"
+              layout="contained"
+              align="center"
+              titleStyle={{ color: "#333333" }} // 使用 config.text_color
             />
           </div>
-        </AbsoluteFill>
-      </Sequence>
+        </Sequence>
 
-      {/* Subtitles */}
-      <Subtitle
-        text="Diverse groups participated, each with their own aspirations. Despite internal conflicts, the Congress under Gandhi forged a national unity. By 1942, the 'Quit India' movement marked the final push towards independence."
-        startFrame={0}
-        durationInFrames={420}
-      />
+        {/* 核心对比组件 */}
+        <Sequence from={15} durationInFrames={durationInFrames - 15}>
+          <div style={{
+            marginTop: 180, // 给标题留出空间
+            height: 600,
+            width: "100%",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            opacity: interpolate(frame, [15, 45], [0, 1])
+          }}>
+            <div style={{ 
+              width: "80%", 
+              height: "100%", 
+              boxShadow: "0 20px 50px rgba(0,0,0,0.1)",
+              borderRadius: 24,
+              overflow: "hidden"
+            }}>
+              <LogicComparisonSlider
+                title="Decompression Result"
+                beforeLabel="Impingement (Before)"
+                afterLabel="Decompressed (After)"
+                initialPosition={0.3}
+                autoAnimate={true}
+                handleColor={primaryColor}
+                beforeContent={
+                  <div style={{ width: "100%", height: "100%", position: "relative" }}>
+                    <img 
+                      src={beforeImage} 
+                      alt="Shoulder Impingement"
+                      style={{ 
+                        width: "100%", 
+                        height: "100%", 
+                        objectFit: "cover",
+                        filter: "sepia(0.2) contrast(1.1)" // 视觉微调增强对比
+                      }} 
+                    />
+                    <div style={{
+                      position: "absolute",
+                      bottom: 20,
+                      left: 20,
+                      background: "rgba(230, 57, 70, 0.9)", // Accent color for warning
+                      color: "white",
+                      padding: "8px 16px",
+                      borderRadius: 8,
+                      fontWeight: "bold",
+                      fontSize: 14,
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.2)"
+                    }}>
+                      ⚠️ Inflammation
+                    </div>
+                  </div>
+                }
+                afterContent={
+                  <div style={{ width: "100%", height: "100%", position: "relative" }}>
+                    <img 
+                      src={afterImage} 
+                      alt="Decompressed Shoulder"
+                      style={{ 
+                        width: "100%", 
+                        height: "100%", 
+                        objectFit: "cover" 
+                      }} 
+                    />
+                    <div style={{
+                      position: "absolute",
+                      bottom: 20,
+                      right: 20,
+                      background: "rgba(0, 119, 182, 0.9)", // Primary color for success
+                      color: "white",
+                      padding: "8px 16px",
+                      borderRadius: 8,
+                      fontWeight: "bold",
+                      fontSize: 14,
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.2)"
+                    }}>
+                      ✅ Clear Space
+                    </div>
+                  </div>
+                }
+              />
+            </div>
+          </div>
+        </Sequence>
+
+        {/* 字幕 */}
+        <Subtitle
+          text="This decompression creates more space, allowing the rotator cuff to move freely without friction."
+          startFrame={0}
+          durationInFrames={durationInFrames}
+          speakerLabel="Narrator"
+          variant="solid"
+          emphasisWords={["creates more space", "freely", "without friction"]}
+        />
+      </SafeArea>
     </AbsoluteFill>
   );
 }

@@ -1,5 +1,145 @@
 # AI Scene 代码生成指南
 
+---
+
+## 🚨 紧急警告：防止组件重叠（必读！）
+
+**最常见的致命错误**：在 `SplitScreen`/`GridLayout` 中使用全屏容器型组件。
+
+### ❌ 禁止的错误用法（会导致页面混乱）
+
+```tsx
+// ❌ 错误示例 1：Title3DFloating 在 SplitScreen 中
+<SplitScreen
+  left={<Title3DFloating text="标题" />}  // ← 会覆盖整个屏幕！
+  right={<ListBulletPoints items={[...]} />}
+/>
+
+// ❌ 错误示例 2：TitleCinematicIntro 在 GridLayout 中
+<GridLayout
+  items={[
+    { content: <TitleCinematicIntro text="标题" /> }  // ← 会覆盖其他格子！
+  ]}
+/>
+
+// ❌ 错误示例 3：导入了但没用
+import { Title3DFloating } from "../components";  // ← 永远不要导入全屏组件到有布局的场景
+
+// ❌ 错误示例 4：在 SplitScreen 的 left/right 中用 <AbsoluteFill>
+<SplitScreen
+  left={<MyComponent />}
+  right={
+    <AbsoluteFill>  // ← 错误！会铺满全屏，遮挡左侧
+      <LogicFlowPath steps={[...]} />
+    </AbsoluteFill>
+  }
+/>
+
+// ❌ 错误示例 5：在 SplitScreen 的 left/right 中定义包含 AbsoluteFill 的组件
+const StepsView = () => (
+  <AbsoluteFill>  // ← 错误！
+    <LogicFlowPath steps={[...]} />
+  </AbsoluteFill>
+);
+
+<SplitScreen
+  left={<VisualView />}
+  right={<StepsView />}  // ← 会铺满全屏
+/>
+```
+
+### ✅ 正确用法
+
+```tsx
+// ✅ 正确示例 1：在 SplitScreen 中用普通标题
+<SplitScreen
+  left={
+    <div style={{ padding: 60 }}>
+      <h1 style={{ fontSize: 48 }}>标题</h1>
+    </div>
+  }
+  right={<ListBulletPoints items={[...]} />}
+/>
+
+// ✅ 正确示例 2：Title3DFloating 独占场景
+<AbsoluteFill>
+  <Title3DFloating text="开场标题" />
+  {/* 这个场景除了标题不要放其他主要内容 */}
+</AbsoluteFill>
+
+// ✅ 正确示例 3：在 SplitScreen 的 left/right 中用 <div> 包裹
+<SplitScreen
+  left={<VisualView />}
+  right={
+    <div style={{ padding: 60, height: "100%", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+      <LogicFlowPath 
+        title="Procedure Steps"
+        steps={[...]}
+        layout="timeline"
+      />
+    </div>
+  }
+/>
+
+// ✅ 正确示例 4：用普通函数组件，不用 AbsoluteFill
+const StepsView = () => (
+  <div style={{ padding: 60 }}>  // ← 用 <div>，不用 <AbsoluteFill>
+    <LogicFlowPath steps={[...]} />
+  </div>
+);
+
+<SplitScreen
+  left={<VisualView />}
+  right={<StepsView />}
+/>
+```
+
+### 🔍 生成代码前自查
+
+**必须问自己 5 个问题**：
+1. 我是否导入了 `Title3DFloating`、`TitleCinematicIntro`、`TitleHeroGlitch`、`StatLiquidBubble`？
+2. 如果导入了，它们是否作为 `<AbsoluteFill>` 的**唯一子元素**？
+3. 如果场景中有 `SplitScreen`/`GridLayout`，里面是否**只有**局部组件（卡片、列表、图表）？
+4. **在 `SplitScreen` 的 `left`/`right` 属性中，是否避免使用 `<AbsoluteFill>`？**
+5. **如果定义了辅助函数组件（如 `StepsView`），它是否用 `<div>` 而不是 `<AbsoluteFill>`？**
+
+**如果任意一个答案是"否"，立即重新设计布局！**
+
+---
+
+### ⚠️ 特别注意：`<AbsoluteFill>` 的使用规则
+
+**`<AbsoluteFill>` 只能用在以下两个位置**：
+1. **场景的最外层**：`<AbsoluteFill style={{ background: "..." }}>` 作为场景的根容器
+2. **独立的动画层**：与其他内容完全分离的叠加层（如粒子效果、vignette 等）
+
+**❌ 绝对禁止在以下位置使用 `<AbsoluteFill>`**：
+- `SplitScreen` 的 `left`/`right` 属性中
+- `GridLayout` 的 `items` 中
+- 任何需要"局部显示"的组件内部
+
+**正确的替代方案**：
+```tsx
+// ❌ 错误
+<SplitScreen
+  right={
+    <AbsoluteFill>  // 会铺满全屏！
+      <div>内容</div>
+    </AbsoluteFill>
+  }
+/>
+
+// ✅ 正确
+<SplitScreen
+  right={
+    <div style={{ height: "100%", display: "flex", flexDirection: "column", justifyContent: "center", padding: 60 }}>
+      内容
+    </div>
+  }
+/>
+```
+
+---
 
 ## 🎯 核心目标
 
@@ -266,12 +406,14 @@ generate_scene_code(target_scene, course_json["config"])
 ### 2. 场景设计专业性
 
 
-- ✅ **静态教学场景**：每个场景是一个完整的教学单元，内容稳定呈现
+- ✅ **动态视频场景**：每个场景是流动的教学叙事，内容通过运动和节奏传达
+- ✅ **镜头语言**：使用推拉摇移、景别变化、视线引导，让画面有电影感
+- ✅ **空间深度**：前后景分离、元素层叠、动态追踪，避免平面化
 - ✅ **重点突出**：使用视觉层次、颜色、动画突出关键知识点
 - ✅ **信息密度适中**：避免信息过载，每个场景聚焦 1-3 个核心概念
 - ✅ **视觉辅助**：使用图表、示意图、代码示例等多种形式辅助理解
-- ❌ **禁止动态 Slides 效果**：不要生成类似 PPT 自动播放的多页切换效果
-- ❌ **禁止过度动画**：动画应服务于教学目的，不要为了炫酷而添加无意义动画
+- ❌ **禁止 Slides 风格**：不要生成"标题+列表+图片"的静态三段式布局，场景之间避免硬切
+- ❌ **禁止过度依赖固定布局**：`SplitScreen`/`GridLayout` 适合对比型内容，但不要连续多场景都用相同布局
 - ❌ **禁止信息堆砌**：避免在一个场景中塞入过多内容
 
 
@@ -288,9 +430,10 @@ generate_scene_code(target_scene, course_json["config"])
 
 - **Subtitle 默认只显示 90 帧**：字幕组件内部自带淡入淡出和 `durationInFrames=90` 的默认值。渲染字幕时请显式传入 `startFrame` 与 `durationInFrames`，否则 3 秒后字幕会自动淡出，即便 Sequence 仍在播放。
 - **整屏布局组件会覆盖画面**：`FullScreen`、`SplitScreen`、`GridLayout`、`TimelineLayout`、`LayeredLayout` 等组件本身就是 `AbsoluteFill` 容器。若只想占据局部区域，先用 `div` 控制父容器尺寸或在 `Sequence` 中限制高度，再把布局组件嵌进去，避免与其它元素重叠。
-- **数据/统计组件要使用真实 props**：例如 `StatRollingCounter` 使用 `targetValue/label`，推荐 `durationInFrames`（`duration` 为兼容字段），并可传入 `seed` 保证可复现；`ChartBarRace` 接受“快照数组的数组”，推荐 `snapshotDurationInFrames`（`framesPerSnapshot` 为兼容字段）。务必参考组件源码或下文示例。
-- **禁止非确定性渲染**：场景代码与组件使用中禁止 `Math.random()` / `Date.now()` 等非确定逻辑。需要“随机感”时，使用 Remotion 的 `random(seed)` 或给组件传入 `seed`（如 `ChartWordCloud/StatRollingCounter/PhysCollisionCollider/IndCircuitBoard/...`）。
+- **数据/统计组件要使用真实 props**：例如 `StatRollingCounter` 使用 `targetValue/label`，推荐 `durationInFrames`（`duration` 为兼容字段），并可传入 `seed` 保证可复现；`ChartBarRace` 接受"快照数组的数组"，推荐 `snapshotDurationInFrames`（`framesPerSnapshot` 为兼容字段）。务必参考组件源码或下文示例。
+- **禁止非确定性渲染**：场景代码与组件使用中禁止 `Math.random()` / `Date.now()` 等非确定逻辑。需要"随机感"时，使用 Remotion 的 `random(seed)` 或给组件传入 `seed`（如 `ChartWordCloud/StatRollingCounter/PhysCollisionCollider/IndCircuitBoard/...`）。
 - **颜色插值必须用 `safeInterpolateColor`/`interpolateColors`**：禁止把颜色字符串传给 `interpolate`。透明度渐变可用 `safeInterpolateAlpha`（`src/utils/colorUtils.ts`），或先插值数值再拼成 `rgba`。
+- **速度/除数参数必须 > 0**：给组件传 `rotationSpeed`、`animationSpeed`、`duration` 等作为除数的参数时，确保值 > 0，避免除零导致 `Infinity` 进入 `interpolate` 的 `inputRange`。若无明确值，传默认正数（如 `1`）。
 - **禁止时间驱动动画**：不要依赖 CSS `transition` / SVG SMIL（`<animate>`/`<animateTransform>`）来做关键动画。Remotion 场景应使用 `frame` + `interpolate/spring` 计算样式值（帧驱动）。
 - **禁止动态执行表达式**：不要在场景里写 `new Function()`。例如 `MathFunctionPlot` 请用其 `expression` 参数（支持 `sin/cos/...` 等基础表达式）。
 - **Sequence 与组件内部动画须匹配**：某些组件内部会基于帧数做插值（字幕、计数器、GridLayout 的 spring 动画等）。外层 Sequence 的 `durationInFrames` 必须覆盖这些动画，否则插值会在序列尚未结束时被截断或过早完成。
@@ -299,9 +442,11 @@ generate_scene_code(target_scene, course_json["config"])
 ### 布局与元素稳定性指南
 
 - **保持单一根节点**：顶层 `<AbsoluteFill>` 只能有一个，阶段切换通过 `Sequence` 包裹内部内容并用 `opacity/transform` 控制显示，避免多个全屏容器互相覆盖。
-- **全屏布局需先“缩圈”**：`SplitScreen`、`GridLayout`、`AnimatedSplitScreen`、`TimelineLayout` 等原子布局都是绝对定位。想让它们只占中间 600px，就先写一个限制尺寸的 `<div>` 再把布局组件放进去。
+- **严格区分全屏型与局部型组件**：全屏容器型组件（如 `Title3DFloating`、`TitleCinematicIntro`、所有布局组件）**禁止嵌套在局部 `<div>` 中**，否则会覆盖整个画面。需要局部标签时用普通 `<h1>`/`<span>` + 样式。
+- **全屏布局需先"缩圈"**：`SplitScreen`、`GridLayout`、`AnimatedSplitScreen`、`TimelineLayout` 等原子布局都是绝对定位。想让它们只占中间 600px，就先写一个限制尺寸的 `<div>` 再把布局组件放进去。
 - **Sequence 要精确切片**：不要在同一时间渲染两个完整场景的 `<AbsoluteFill>`。若是两阶段内容，划分 `Sequence` 并确保 `durationInFrames` 精确覆盖该阶段。
 - **字幕写法统一**：要么直接 `<Subtitle startFrame={全局帧} durationInFrames={...} />`，要么把 Subtitle 放进 `Sequence` 并把 `startFrame` 设为 0、`durationInFrames` 使用序列长度，切勿二者混用导致重复计算。
+- **`position: absolute` 标签必须有明确父容器**：如需在 3D 模型/图表上叠加标签，父容器必须设置 `position: relative` 并限制尺寸，标签用 `position: absolute` + `top/left/right/bottom` 定位，不要误用全屏组件。
 - **严格使用已有组件名**：生成代码前先确认组件是否在 `src/components` 中存在并被导出，禁止引用 `ListNumbered` 之类的虚构组件。
 
 ---
@@ -436,6 +581,88 @@ JSON 中的 `component.type` 需要映射到项目组件库的实际组件：
 | `3D/仿真 (3d-model)` | 3d-industrial | `Ind3DGlobe`, `IndSolarSystem`, `IndTerrainMap`, `IndCircuitBoard` 等 |
 
 
+**⚠️ 组件布局类型（防止重叠的关键）**：
+
+### 🚫 全屏容器型组件（禁止在 SplitScreen/GridLayout 中使用）
+
+以下组件会**占据整个屏幕**，自带 `<AbsoluteFill>` 或 `position: absolute; width: 100%; height: 100%`：
+
+**❌ 严格禁止的使用场景**：
+- 禁止放在 `SplitScreen` 的 `left`/`right` 属性中
+- 禁止放在 `GridLayout` 的 `items` 中
+- 禁止嵌套在任何 `<div>` 容器中
+
+**✅ 唯一允许的使用场景**：
+- 作为场景的唯一内容（独占整个 `<AbsoluteFill>`）
+- 或放在 `Sequence` 中作为独立阶段
+
+**组件清单**：
+| 组件名 | 说明 | 是否全屏 | 替代方案 |
+|--------|------|---------|---------|
+| `Title3DFloating` | 全屏 3D 悬浮字，带背景和粒子 | ✅ 是（强制全屏） | 用 `<h1>` + CSS |
+| `TitleCinematicIntro` | 电影开场标题 | ⚠️ 默认全屏，但可用 `layout="contained"` 变为局部 | - |
+| `TitleHeroGlitch` | 故障风格标题 | ✅ 是 | 用 `<h1>` + `filter` |
+| `StatLiquidBubble` | 液体气泡统计 | ✅ 是 | `<StatRollingCounter>` |
+| **所有布局组件** | `FullScreen`, `SplitScreen`, `GridLayout`, `AnimatedSplitScreen`, `TimelineLayout`, `LayeredLayout`, `PictureInPicture`, `CircularLayout`, `MasonryLayout` | ✅ 是 | - |
+
+**特别说明**：
+- `TitleCinematicIntro` 可以通过 `layout="contained"` 变为局部组件，但**默认是全屏**
+- 如果不确定，优先用 `<h1>` + CSS
+
+---
+
+### ✅ 局部内嵌型组件（可以自由使用）
+
+以下组件可以放在 **任意容器** 中（包括 `SplitScreen`、`GridLayout`、`<div>`）：
+
+- **卡片**：`CardGlassmorphism`, `CardNeumorphism`, `CardHolographic`
+- **列表**：`ListBulletPoints`, `ListStaggeredEntry`, `ListMindmapTree`
+- **图表**：`ChartBarRace`, `ChartLineMultiple`, `ChartPieDonut`, `ChartSankeyFlow` 等
+- **统计**：`StatRollingCounter`, `StatProgressRing`, `StatGaugeCircular`
+- **代码**：`CodeBlock`, `TechCodeDiff`, `TechTerminalTyping`
+- **工业可视化**：`IndRobotArm`, `IndConveyorBelt`, `IndAssemblyLine`, `IndTerrainMap` 等
+
+---
+
+### 📖 正确示例
+
+```tsx
+// ❌ 错误：Title3DFloating 会覆盖整个屏幕
+<SplitScreen
+  left={<Title3DFloating text="标题" />}  // ← 错误！
+  right={<ListBulletPoints items={[...]} />}
+/>
+
+// ✅ 正确：用普通标题
+<SplitScreen
+  left={
+    <div style={{ padding: 60 }}>
+      <h1 style={{ fontSize: 48, color: theme.colors.primary }}>标题</h1>
+    </div>
+  }
+  right={<ListBulletPoints items={[...]} />}
+/>
+
+// ✅ 正确：Title3DFloating 独占整个场景
+<AbsoluteFill>
+  <Title3DFloating text="开场标题" />
+</AbsoluteFill>
+```
+
+**辅助工具（可选，用于复杂动画）**：
+- `src/utils/layoutHelpers.ts`：提供简单的辅助函数
+  - `calculateOrbitPosition(frame, radius?, speed?, centerX?, centerY?)`：环绕动画
+  - `calculateDepthOfField(depth, maxBlur?)`：景深效果
+- ⚠️ **使用建议**：仅在需要特殊运动效果时使用，优先用 `interpolate` 实现基础动画
+- 使用方式：`import { calculateOrbitPosition } from "../../utils/layoutHelpers";`
+
+**使用原则（必须遵守）**：
+1. **SplitScreen/GridLayout 中绝对不能用全屏容器型组件**（否则会覆盖整个画面）
+2. **需要标题时用 `<h1>` + CSS**，不要用 `Title3DFloating`/`TitleCinematicIntro`
+3. **全屏容器型组件只能独占场景**（作为 `<AbsoluteFill>` 的唯一子元素）
+4. **导入组件时检查清单**：如果看到 `Title3DFloating` 等全屏组件，确认使用场景是否正确
+
+
 
 **布局方式映射**：
 
@@ -448,6 +675,143 @@ JSON 中的 `component.type` 需要映射到项目组件库的实际组件：
 | `上下分栏` | `AnimatedSplitScreen` (direction="vertical") |
 | `画中画` | `PictureInPicture` |
 | `多层叠加` | `LayeredLayout` |
+
+
+**⚠️ 布局策略（避免 Slides 风格，打造电影级视频）**：
+
+---
+
+### 🎬 场景布局两层决策模型（简化版）
+
+**第一层：快速判断场景类型**
+
+| 场景类型 | 推荐方案 | 示例代码 |
+|---------|---------|---------|
+| **单一主体**（3D 模型、大标题） | ✅ 居中 + `scale` 动画 | 见下方"推进特写" |
+| **对比型**（代码前后、新旧对比） | ✅ `AnimatedSplitScreen` | `<AnimatedSplitScreen animation="wipe" />` |
+| **多要点并列**（知识点 3-6 个） | ✅ `GridLayout` | `<GridLayout items={[...]} columns={3} />` |
+| **流程步骤**（时间线） | ✅ `TimelineLayout` | `<TimelineLayout items={[...]} />` |
+| **其他**（单标题+图表） | ✅ 自由定位 | 见下方"基础布局" |
+
+---
+
+**第二层：选择动画方案（3 种基础模式）**
+
+**🥇 模式 1：基础布局（最常用，80% 场景）**
+
+```tsx
+// ✅ 最简单：标题 + 图表（淡入淡出）
+<AbsoluteFill style={{ background: "linear-gradient(...)", padding: 60 }}>
+  <div style={{ opacity: interpolate(frame, [0, 30], [0, 1]) }}>
+    <h1>标题</h1>
+  </div>
+  
+  <div style={{ 
+    marginTop: 100,
+    opacity: interpolate(frame, [30, 60], [0, 1]),
+  }}>
+    <ChartBarRace data={...} />
+  </div>
+</AbsoluteFill>
+```
+
+**核心技巧**：
+- **交错入场**：标题先出现（0-30 帧），图表后出现（30-60 帧）
+- **避免数学计算**：用 `interpolate` 实现 90% 的动画
+
+---
+
+**🥈 模式 2：推进特写（需要"镜头感"时使用，15% 场景）**
+
+```tsx
+// ✅ 推进效果：从远到近
+<AbsoluteFill style={{ background: "..." }}>
+  <div style={{
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    transform: `translate(-50%, -50%) scale(${interpolate(frame, [0, 60], [0.5, 1.2])})`,
+  }}>
+    <MainContent />
+  </div>
+</AbsoluteFill>
+```
+
+---
+
+**🥉 模式 3：布局组件（对比/并列/流程场景，5% 场景）**
+
+```tsx
+// ✅ 代码对比
+<AnimatedSplitScreen
+  left={<CodeBefore />}
+  right={<CodeAfter />}
+  animation="wipe"
+  animationDuration={60}
+/>
+
+// ✅ 多要点
+<GridLayout
+  items={[
+    { content: <Card1 /> },
+    { content: <Card2 /> },
+  ]}
+  columns={2}
+  staggerDelay={10}
+/>
+```
+
+---
+
+### 🚫 禁止的 Slides 化行为
+
+| 错误做法 | 为什么错 | 正确做法 |
+|---------|---------|---------|
+| ❌ 连续 3+ 个场景都用 `SplitScreen` | PPT 翻页感 | 最多 1-2 次用于关键对比 |
+| ❌ 元素同时淡入（`opacity: 0→1`） | 缺少节奏 | 交错入场（先后 30 帧） |
+| ❌ 静态摆放内容（无动画） | 呆板 | 用 `interpolate` 添加淡入/位移 |
+
+---
+
+### 📐 布局决策流程图（简化版）
+
+```
+是否需要对比？
+├─ 是 → AnimatedSplitScreen
+└─ 否 ↓
+
+是否有 3+ 个并列要点？
+├─ 是 → GridLayout
+└─ 否 ↓
+
+是否展示时间线？
+├─ 是 → TimelineLayout
+└─ 否 ↓
+
+默认 → 自由定位 + interpolate 动画
+```
+
+---
+
+### 🎥 动画实现速查表（只用 interpolate）
+
+| 效果 | 代码示例 |
+|------|---------|
+| **淡入** | `opacity: interpolate(frame, [0, 30], [0, 1])` |
+| **推进** | `transform: scale(${interpolate(frame, [0, 60], [0.5, 1.2])})` |
+| **左滑入** | `transform: translateX(${interpolate(frame, [0, 30], [-100, 0])}px)` |
+| **旋转** | `transform: rotateY(${interpolate(frame, [0, 90], [0, 360])}deg)` |
+
+---
+
+### 📊 布局配额建议（简化版）
+
+| 布局类型 | 推荐次数 |
+|---------|---------|
+| 自由定位 + `interpolate` | ✅ 默认方案 |
+| `AnimatedSplitScreen` | ≤ 2 次 |
+| `GridLayout` | ≤ 1 次 |
+| `TimelineLayout` | ≤ 1 次 |
 
 
 **动画意图映射**：
@@ -834,7 +1198,7 @@ import {
 </FullScreen>
 ```
 - 用于统一安全边距，避免字幕/标题/卡片贴边。
-- `padding` 默认 60（适合 1080×720 教学视频），需要更“紧凑”可改为 40。
+- `padding` 默认 60（适合 1080×720 教学视频），需要更"紧凑"可改为 40。
 
 #### 1. FullScreen - 全屏布局
 
@@ -1145,7 +1509,7 @@ import {
   footer="配套练习：Lesson 1"
 />
 ```
-- 允许在 `content` 中传入 React 片段；`eyebrow`/`footer`/`stat*` 等属性可直接构建“知识点 + 数据 + 练习”组合。
+- 允许在 `content` 中传入 React 片段；`eyebrow`/`footer`/`stat*` 等属性可直接构建"知识点 + 数据 + 练习"组合。
 - `align`、`maxWidth`、`accentColor` 可灵活控制卡片布局，避免为了基础排版再造组件。
 
 
@@ -1294,7 +1658,7 @@ import { ListBulletPoints } from "../components";
 />
 ```
 - 组件内部只认 `targetValue`，`prefix/suffix` 控制数值左右的符号或单位。不要再使用 `value`/`unit` 字段。
-- 需要可复现的“背景数字流”时，传入稳定的 `seed`。
+- 需要可复现的"背景数字流"时，传入稳定的 `seed`。
 
 
 
@@ -1376,7 +1740,7 @@ import {
   ]}
 />
 ```
-- `data` 是“快照数组的数组”——外层数组代表时间切片，内层是该切片的所有条目。至少提供 1 个快照。
+- `data` 是"快照数组的数组"——外层数组代表时间切片，内层是该切片的所有条目。至少提供 1 个快照。
 - 推荐使用 `snapshotDurationInFrames` 控制切片时长（`framesPerSnapshot` 为兼容字段）。
 
 
@@ -1785,7 +2149,7 @@ import {
   seed="gas-demo"
 />
 ```
-- `temperature` 为“温度系数”（相对量，用于控制初始速度强度）。
+- `temperature` 为"温度系数"（相对量，用于控制初始速度强度）。
 - 该组件会预计算 `durationInFrames` 帧并按需循环播放，适合教学可视化而非严格物理单位仿真。
 
 
@@ -1824,7 +2188,7 @@ import {
   seed="rxn-h2o"
 />
 ```
-- 用结构化 `reactants/products` 传入配平方程式，便于保证“原子守恒”的教学准确性。
+- 用结构化 `reactants/products` 传入配平方程式，便于保证"原子守恒"的教学准确性。
 
 
 
@@ -2690,7 +3054,19 @@ const items = data.map((item, index) => {
 在生成场景代码后，请检查以下项目：
 
 
-### 教学内容检查
+### 代码检查清单（生成前必须验证）
+
+**导入检查（Critical）**：
+- [ ] 检查 `import` 语句中是否有 `Title3DFloating`, `TitleCinematicIntro`, `TitleHeroGlitch`, `StatLiquidBubble`
+- [ ] 如果有，确认它们**没有**被放在 `SplitScreen`/`GridLayout` 中
+- [ ] 如果有，确认它们是场景的**唯一内容**（独占 `<AbsoluteFill>`）
+
+**布局检查**：
+- [ ] `SplitScreen` 的 `left`/`right` 属性中只能有：`<div>`、卡片、列表、图表、统计组件
+- [ ] `GridLayout` 的 `items` 中只能有：卡片、列表、图表等局部组件
+- [ ] 如果场景需要标题，用 `<h1>` + CSS，不用全屏标题组件
+
+### 教学内容检查（生成后验证）
 
 
 - [ ] 知识点准确无误

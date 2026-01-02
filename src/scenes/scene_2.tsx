@@ -1,161 +1,175 @@
 import React from "react";
-import { AbsoluteFill, Img, useCurrentFrame, interpolate, Sequence, useVideoConfig } from "remotion";
+import { AbsoluteFill, useCurrentFrame, interpolate, Sequence } from "remotion";
 import { 
-  CardGlassmorphism, 
-  ListStaggeredEntry, 
+  SplitScreen, 
+  ListBulletPoints, 
+  IndRobotArm, 
   Subtitle,
-  SafeArea
+  Title3DFloating
 } from "../components";
 import { useTheme } from "../contexts/ThemeContext";
 
 /**
- * 场景索引：1
- * 场景 ID：scene_2
- * 场景目标：Define Satyagraha and list the early experiments.
- * 布局方式：main-content.center
- * 持续时间：14.0 秒 (420 帧)
+ * Scene 2: Mechanism of Impingement
  * 
- * 组件清单：
- * - S2_C1_Quote: quote-block
- * - S2_C2_Locations: bullet-points
+ * Target: Know: Understand the mechanism of impingement.
+ * Layout: SplitScreen (Visual Metaphor Left / Essential Info Right)
+ * Duration: 7.5 seconds (225 frames)
+ * 
+ * Visual Logic:
+ * - Left: Uses IndRobotArm to simulate the mechanics of arm abduction (lifting).
+ * - Overlay: A red pulsating gradient represents the inflammation/pain point where the "bone" rubs the "tendon".
+ * - Right: Bullet points explaining the syndrome.
  */
 export default function Scene2() {
   const theme = useTheme();
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-  
-  // 场景配置
-  const durationInSeconds = 14.0;
-  const durationInFrames = durationInSeconds * fps;
-  
-  // 颜色配置 (来自 JSON config)
-  const primaryColor = "#FF9933"; // Saffron
-  const secondaryColor = "#138808"; // Green
-  const accentColor = "#000080"; // Navy Blue
-  const textColor = "#2C2C2C";
-  const paperBg = "#F4E4BC";
 
-  // 背景动画 (Parallax effect)
-  const bgScale = interpolate(frame, [0, durationInFrames], [1.0, 1.15]);
-  const bgOpacity = interpolate(frame, [0, 20], [0, 1]);
+  // Configuration from JSON
+  const colors = {
+    primary: "#0077B6",
+    secondary: "#90E0EF",
+    accent: "#E63946",
+    text: "#333333",
+    background: "linear-gradient(to bottom, #F0F8FF, #E0F7FA)"
+  };
 
-  // 引用卡片动画 (Scale up gentle)
-  const quoteOpacity = interpolate(frame, [10, 40], [0, 1]);
-  const quoteTranslateY = interpolate(frame, [10, 40], [20, 0], { extrapolateRight: "clamp" });
+  // Animation: Arm lifting simulation (Abduction 0 -> 90 degrees)
+  // Moves slowly throughout the scene to show the process
+  const armLiftAngle = interpolate(
+    frame,
+    [0, 150],
+    [0, -80], // Negative to lift up in standard coordinate systems often used in 2D/3D rigs
+    { extrapolateRight: "clamp" }
+  );
 
-  // 列表动画 (Staggered fade in up)
-  // ListStaggeredEntry 组件内部处理了 stagger，这里只需要控制整体容器的出现
-  const listStartFrame = 60; // 2秒后开始显示列表
-  
+  // Animation: Inflammation Pulse (Simulating the "Red Glow" on contact)
+  // Starts appearing as the arm reaches a certain height (frame 45+)
+  const painOpacity = interpolate(
+    frame,
+    [45, 90, 135, 180, 225],
+    [0, 0.8, 0.4, 0.9, 0.5], // Pulsing effect
+    { extrapolateRight: "clamp" }
+  );
+
+  const painScale = interpolate(
+    frame,
+    [45, 90],
+    [0.5, 1.5],
+    { extrapolateRight: "clamp" }
+  );
+
   return (
-    <AbsoluteFill style={{ backgroundColor: paperBg }}>
-      {/* 1. 背景层 - 历史图片 + 视差效果 */}
-      <AbsoluteFill style={{ overflow: 'hidden' }}>
-        <Img 
-          src="https://server.x-pilot.ai/static/meta-doc/zip/6848983ab881878abaadf19c18e0cf86/images/16d421362bf6f0322e36273bc3a28cf9911595965c69c86f897dffff2a0166e5.jpg"
-          style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            transform: `scale(${bgScale})`,
-            opacity: bgOpacity,
-            filter: 'sepia(0.3) contrast(1.1)' // 增强历史感
-          }}
-        />
-        {/* 叠加层，确保文字可读性 */}
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: `linear-gradient(to bottom, ${paperBg}EE, ${paperBg}CC 40%, ${paperBg}EE)`,
-        }} />
-      </AbsoluteFill>
-
-      <SafeArea>
-        <div style={{ 
-          height: '100%', 
-          display: 'flex', 
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-          paddingTop: 40,
-          paddingBottom: 160 // 留出字幕空间
-        }}>
-          
-          {/* 2. 顶部 - 核心引用 (S2_C1_Quote) */}
-          <Sequence from={10}>
-            <div style={{ 
-              opacity: quoteOpacity, 
-              transform: `translateY(${quoteTranslateY}px)`,
-              display: 'flex',
-              justifyContent: 'center'
-            }}>
-              <div style={{ maxWidth: 900 }}>
-                <CardGlassmorphism
-                  title="Mahatma Gandhi"
-                  content={
-                    <div style={{ 
-                      fontFamily: theme.fonts.heading, // 使用 Merriweather 风格
-                      fontSize: 32, 
-                      lineHeight: 1.4,
-                      fontStyle: 'italic',
-                      color: textColor
-                    }}>
-                      "Satyagraha is not physical force... it is pure soul-force. Truth is the very substance of the soul."
-                    </div>
-                  }
-                  icon="🕉️"
-                  accentColor={primaryColor}
-                  variant="light" // 浅色风格适配历史背景
-                  footer="Source: Early Experiments with Truth"
-                />
+    <AbsoluteFill style={{ background: colors.background }}>
+      
+      {/* Main Layout */}
+      <SplitScreen
+        ratio={0.55} // Give slightly more space to the visual
+        left={
+          <div style={{ 
+            position: "relative", 
+            width: "100%", 
+            height: "100%",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            flexDirection: "column"
+          }}>
+            {/* Visual Metaphor: Mechanical Arm representing Skeletal Mechanics */}
+            <div style={{ width: 400, height: 400, position: "relative" }}>
+              <IndRobotArm
+                joints={[
+                  { angle: 0, length: 140 },    // 'Torso/Scapula' base
+                  { angle: armLiftAngle, length: 160 }, // 'Humerus' lifting
+                  { angle: 15, length: 80 }     // 'Forearm'
+                ]}
+                showAxes={false}
+              />
+              
+              {/* Inflammation Overlay: The "Contact Point" */}
+              <div style={{
+                position: "absolute",
+                top: "45%", // Approximate joint location
+                left: "50%",
+                width: 120,
+                height: 120,
+                borderRadius: "50%",
+                background: `radial-gradient(circle, ${colors.accent} 0%, transparent 70%)`,
+                opacity: painOpacity,
+                transform: `translate(-50%, -50%) scale(${painScale})`,
+                pointerEvents: "none",
+                mixBlendMode: "multiply"
+              }} />
+              
+              {/* Label for the visual metaphor */}
+              <div style={{
+                position: "absolute",
+                top: "45%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+                opacity: painOpacity,
+                color: colors.accent,
+                fontWeight: "bold",
+                textShadow: "0 0 10px white"
+              }}>
+                IMPINGEMENT
               </div>
             </div>
-          </Sequence>
 
-          {/* 3. 底部 - 早期运动列表 (S2_C2_Locations) */}
-          <Sequence from={listStartFrame}>
-            <div style={{ maxWidth: 1000, margin: '0 auto', width: '100%' }}>
-              <ListStaggeredEntry 
-                title="Early Satyagraha Movements"
-                items={[
-                  { 
-                    title: "1917: Champaran", 
-                    description: "Peasants struggle against indigo planters",
-                    icon: "🌿",
-                    accentColor: secondaryColor 
-                  },
-                  { 
-                    title: "1917: Kheda", 
-                    description: "Peasant revenue remission",
-                    icon: "🌾",
-                    accentColor: primaryColor
-                  },
-                  { 
-                    title: "1918: Ahmedabad", 
-                    description: "Cotton mill workers' satyagraha",
-                    icon: "🏭",
-                    accentColor: accentColor
-                  }
-                ]}
-                staggerDelay={15}
-                twoColumns={false} // 单列居中显示更稳重
-              />
+            <div style={{ 
+              marginTop: 20, 
+              color: colors.primary, 
+              fontFamily: theme.fonts.mono,
+              fontSize: 14,
+              opacity: 0.7 
+            }}>
+              Fig 2.1: Mechanical Abduction Simulation
             </div>
-          </Sequence>
+          </div>
+        }
+        right={
+          <div style={{ padding: 50, height: "100%", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+            <ListBulletPoints
+              title="Impingement Syndrome"
+              items={[
+                { 
+                  text: "Narrowed Subacromial Space", 
+                  description: "Reduced clearance for movement",
+                  icon: "⬇️",
+                  accentColor: colors.primary
+                },
+                { 
+                  text: "Bone Rubbing Tendon", 
+                  description: "Acromion friction against Rotator Cuff",
+                  icon: "⚠️",
+                  accentColor: colors.accent
+                },
+                { 
+                  text: "Painful Inflammation", 
+                  description: "Resulting in bursitis and tendinitis",
+                  icon: "🔥",
+                  accentColor: colors.accent 
+                }
+              ]}
+              showIndex={true}
+              highlightColor={colors.secondary}
+            />
+          </div>
+        }
+        animation="slide" // Slide-in animation for the split screen
+        animationDuration={30}
+        showDivider={true}
+        labelLeft="Mechanism"
+        labelRight="Pathology"
+      />
 
-        </div>
-      </SafeArea>
-
-      {/* 4. 字幕 */}
+      {/* Subtitle */}
       <Subtitle
-        text="In 1915, Mahatma Gandhi returned with a novel weapon: Satyagraha. It wasn't passive resistance, but pure soul-force based on truth and non-violence. He successfully organized movements in Champaran, Kheda, and Ahmedabad."
-        startFrame={0}
-        durationInFrames={durationInFrames}
-        variant="solid" // 清晰的背景以保证在复杂纹理上可见
-        speakerLabel="Narrator"
-        emphasisWords={["Satyagraha", "soul-force", "truth", "non-violence", "Champaran", "Kheda", "Ahmedabad"]}
+        text="In impingement syndrome, the subacromial space narrows, causing the acromion to rub against the rotator cuff."
+        startFrame={10} // Slight delay to let scene settle
+        durationInFrames={215}
+        emphasisWords={["narrows", "rub", "rotator cuff"]}
+        variant="solid"
       />
     </AbsoluteFill>
   );

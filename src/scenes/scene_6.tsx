@@ -1,209 +1,210 @@
 import React from "react";
-import { AbsoluteFill, Img, useCurrentFrame, interpolate, Sequence } from "remotion";
+import { AbsoluteFill, useCurrentFrame, interpolate, Sequence } from "remotion";
 import { 
-  GridLayout, 
-  TitleHandwritten, 
+  SplitScreen, 
+  IndTerrainMap, 
+  IndRobotArm,
+  LogicFlowPath,
   Subtitle,
-  CardNeumorphism, // Using Neumorphism for a more "paper-like" solid feel fitting historical theme
-  SafeArea
+  TitleCard
 } from "../components";
 import { useTheme } from "../contexts/ThemeContext";
 
 /**
- * Scene 6: Illustrate cultural nationalism.
+ * Scene 6: Acromioplasty (Bone smoothing)
  * 
- * Target: Illustrate cultural nationalism through visual symbols (Bharat Mata, Flag) and folklore.
- * Layout: Grid Collage
- * Duration: 15 seconds (450 frames)
+ * 教学目标: 观察肩峰成形术（骨骼平滑）步骤。
+ * 核心隐喻: 
+ * 1. 地形图 (IndTerrainMap) 从崎岖变平坦 -> 模拟骨刺被磨平。
+ * 2. 机械臂 (IndRobotArm) -> 模拟手术磨钻工具。
  * 
- * Components:
- * - Image Grid (Bharat Mata, Swaraj Flag)
- * - Kinetic Typography ("Reviving Folklore & History")
+ * 时长: 7.0 秒 (210 帧)
  */
 export default function Scene6() {
   const theme = useTheme();
   const frame = useCurrentFrame();
   
-  // Configuration from JSON
-  const durationInFrames = 450; // 15s * 30fps
-  const backgroundUrl = "https://server.x-pilot.ai/static/meta-doc/zip/6848983ab881878abaadf19c18e0cf86/images/43d1ae4334b23af258398fb5c45e6078a56b90d8f733fa90608e59a177327d84.jpg";
+  // 颜色配置
+  const boneColor = "#F5F5F0"; // 骨骼白
+  const roughColor = "#E2E8F0"; // 粗糙部分的阴影
+  const toolColor = "#94A3B8";  // 工具金属色
+
+  // 动画控制
+  // 1. 骨骼表面变化：从粗糙到平滑的交叉淡入淡出
+  const smoothingProgress = interpolate(frame, [30, 150], [0, 1], {
+    extrapolateRight: "clamp",
+  });
   
-  // Colors from palette
-  const primaryColor = "#FF9933";
-  const secondaryColor = "#138808";
-  const accentColor = "#000080";
-  const textColor = "#2C2C2C";
+  // 2. 机械臂运动：模拟磨钻在表面来回移动
+  const armMoveX = interpolate(frame, [0, 100, 200], [-50, 50, -50]);
+  const armMoveY = interpolate(frame, [0, 100, 200], [10, -10, 10]);
 
-  // Animation: Background Parallax (Slow Zoom)
-  const bgScale = interpolate(frame, [0, durationInFrames], [1, 1.1]);
+  // 骨骼表面数据 - 崎岖（有骨刺）
+  const roughTerrain = [
+    [5, 15, 25, 15, 5],
+    [10, 30, 45, 30, 10], // 中间突起代表骨刺
+    [15, 35, 50, 35, 15],
+    [10, 30, 45, 30, 10],
+    [5, 15, 25, 15, 5]
+  ];
 
-  // Animation: Grid Entry (Fade In + Zoom)
-  const gridOpacity = interpolate(frame, [10, 40], [0, 1], { extrapolateRight: "clamp" });
-  const gridScale = interpolate(frame, [10, 40], [0.9, 1], { extrapolateRight: "clamp" });
+  // 骨骼表面数据 - 平滑（术后）
+  const smoothTerrain = [
+    [5, 5, 5, 5, 5],
+    [5, 5, 5, 5, 5],
+    [5, 5, 5, 5, 5],
+    [5, 5, 5, 5, 5],
+    [5, 5, 5, 5, 5]
+  ];
 
-  // Animation: Text Entry (Wipe Right / Mask Reveal)
-  // We'll use the TitleHandwritten component which has built-in drawing animation, fitting the "ink" theme
-  
-  return (
-    <AbsoluteFill style={{ backgroundColor: "#F4E4BC" }}>
-      {/* Background Layer */}
-      <AbsoluteFill style={{ overflow: "hidden" }}>
-        <Img
-          src={backgroundUrl}
-          style={{
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-            transform: `scale(${bgScale})`,
-            opacity: 0.3, // Lower opacity to let content pop
-            filter: "sepia(0.8) contrast(1.1)", // Historical filter
-          }}
+  // 左侧内容：手术模拟视图
+  const SimulationView = () => (
+    <AbsoluteFill style={{ overflow: "hidden", background: "#F1F5F9" }}>
+      {/* 标题标记 */}
+      <div style={{ 
+        position: "absolute", 
+        top: 40, 
+        left: 40, 
+        zIndex: 10,
+        background: "rgba(255,255,255,0.8)",
+        padding: "8px 16px",
+        borderRadius: 8,
+        border: `1px solid ${theme.colors.border}`,
+        color: theme.colors.textSecondary,
+        fontSize: 14,
+        fontWeight: "bold"
+      }}>
+        MICROSCOPIC VIEW: ACROMION SURFACE
+      </div>
+
+      {/* 1. 粗糙表面 (Before) - 随进度消失 */}
+      <div style={{ 
+        position: "absolute", 
+        inset: 0, 
+        opacity: 1 - smoothingProgress,
+        transform: "scale(0.9)" 
+      }}>
+        <IndTerrainMap 
+          heightData={roughTerrain}
+          showContours={true}
+          colorScheme="magma" // 使用深色对比强调崎岖
         />
-        {/* Texture Overlay (Simulated with CSS) */}
+      </div>
+
+      {/* 2. 平滑表面 (After) - 随进度出现 */}
+      <div style={{ 
+        position: "absolute", 
+        inset: 0, 
+        opacity: smoothingProgress,
+        transform: "scale(0.9)" 
+      }}>
+        <IndTerrainMap 
+          heightData={smoothTerrain}
+          showContours={false}
+          colorScheme="viridis" // 使用清爽色调代表平滑
+        />
+      </div>
+
+      {/* 3. 手术工具 (机械臂模拟) */}
+      <div style={{
+        position: "absolute",
+        bottom: -100,
+        right: -50,
+        transform: `translate(${armMoveX}px, ${armMoveY}px) rotate(-15deg)`,
+        zIndex: 20,
+        filter: "drop-shadow(0 10px 20px rgba(0,0,0,0.2))"
+      }}>
+        <IndRobotArm 
+          joints={[
+            { angle: -45, length: 180, color: toolColor }, // 主臂
+            { angle: 90, length: 120, color: toolColor },  // 钻头臂
+            { angle: 0, length: 40, color: "#E63946" }    // 钻头尖端 (红色强调)
+          ]}
+          showAxes={false}
+        />
+      </div>
+      
+      {/* 4. 碎屑粒子效果 (模拟磨骨) */}
+      <Sequence from={30} durationInFrames={120}>
         <div style={{
           position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: "url('https://www.transparenttextures.com/patterns/aged-paper.png')",
-          opacity: 0.4,
-          mixBlendMode: "multiply"
+          top: "50%",
+          left: "50%",
+          width: 200,
+          height: 200,
+          transform: "translate(-50%, -50%)",
+          background: "radial-gradient(circle, rgba(255,255,255,0.8) 0%, transparent 70%)",
+          opacity: interpolate(frame % 20, [0, 10, 20], [0.3, 0.8, 0.3]), // 闪烁效果
+          pointerEvents: "none"
         }} />
-      </AbsoluteFill>
+      </Sequence>
+    </AbsoluteFill>
+  );
 
-      <SafeArea>
-        {/* Main Content: Image Grid */}
-        <Sequence from={15}>
-          <div style={{ 
-            opacity: gridOpacity, 
-            transform: `scale(${gridScale})`,
-            height: "100%",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center"
-          }}>
-            <h2 style={{
-              fontFamily: theme.fonts.heading,
-              color: accentColor,
-              textAlign: "center",
-              fontSize: 42,
-              marginBottom: 40,
-              textShadow: "1px 1px 2px rgba(0,0,0,0.1)"
-            }}>
-              Symbols of Unity
-            </h2>
-
-            <GridLayout
-              columns={2}
-              gap={40}
-              items={[
-                {
-                  content: (
-                    <CardNeumorphism
-                      title="Bharat Mata"
-                      content={
-                        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                          <div style={{ 
-                            width: "100%", 
-                            height: 300, 
-                            overflow: "hidden", 
-                            borderRadius: 8,
-                            border: "2px solid #e5e5e5"
-                          }}>
-                            <Img 
-                              src="https://server.x-pilot.ai/static/meta-doc/zip/6848983ab881878abaadf19c18e0cf86/images/43d1ae4334b23af258398fb5c45e6078a56b90d8f733fa90608e59a177327d84.jpg"
-                              style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                            />
-                          </div>
-                          <div style={{ fontSize: 16, color: textColor, fontStyle: "italic", textAlign: "center" }}>
-                            Ascetic Figure by Abanindranath Tagore
-                          </div>
-                        </div>
-                      }
-                      variant="raised"
-                      accentColor={primaryColor}
-                      style={{ height: "100%" }}
-                    />
-                  ),
-                  animation: "pop-in",
-                  delay: 0
-                },
-                {
-                  content: (
-                    <CardNeumorphism
-                      title="Swaraj Flag"
-                      content={
-                        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                          <div style={{ 
-                            width: "100%", 
-                            height: 300, 
-                            overflow: "hidden", 
-                            borderRadius: 8,
-                            border: "2px solid #e5e5e5"
-                          }}>
-                            <Img 
-                              src="http://35.232.154.66:5125/files/tools/20fd8118-4a80-4688-8f85-608bc3b8c60c.jpg?timestamp=1767022368&nonce=881a5fef6e3c6f8014452f928ffc9375&sign=3mnbfFvodvGR4dU3a1SMgU6HEe38PeTdFlEhpAGYlCY="
-                              style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                            />
-                          </div>
-                          <div style={{ fontSize: 16, color: textColor, fontStyle: "italic", textAlign: "center" }}>
-                            Symbol of Defiance & Self-Rule
-                          </div>
-                        </div>
-                      }
-                      variant="raised"
-                      accentColor={secondaryColor}
-                      style={{ height: "100%" }}
-                    />
-                  ),
-                  animation: "pop-in",
-                  delay: 15
-                }
-              ]}
-            />
-          </div>
-        </Sequence>
-
-        {/* Overlay Text: Folklore & History */}
-        {/* Using TitleHandwritten to match the "Ink/Sketch" aesthetic */}
-        <Sequence from={200} durationInFrames={250}>
-          <div style={{
-            position: "absolute",
-            bottom: 120,
-            left: 0,
-            right: 0,
-            display: "flex",
-            justifyContent: "center",
-            zIndex: 10
-          }}>
-            <div style={{
-              background: "rgba(255, 255, 255, 0.9)",
-              padding: "20px 40px",
-              borderRadius: 16,
-              boxShadow: "0 10px 30px rgba(0,0,0,0.1)",
-              border: `1px solid ${primaryColor}`
-            }}>
-              <TitleHandwritten
-                text="Reviving Folklore & History"
-                subtitle="Instilling pride in India's past"
-                color={accentColor}
-                strokeWidth={3}
-                size={50}
-              />
-            </div>
-          </div>
-        </Sequence>
-
-        {/* Subtitles */}
-        <Subtitle
-          text="Nationalism also grew through culture. Abanindranath Tagore painted Bharat Mata as an ascetic figure. Folklore was revived, and the tricolour flag became a symbol of defiance. History was reinterpreted to instill pride in India's past."
-          startFrame={0}
-          durationInFrames={450}
-          variant="solid"
-          emphasisWords={["culture", "Bharat Mata", "Folklore", "flag", "pride"]}
+  // 右侧内容：步骤逻辑
+  const StepsView = () => (
+    <AbsoluteFill style={{ padding: 60, justifyContent: "center" }}>
+      <div style={{ marginBottom: 40 }}>
+        <TitleCard 
+          title="Acromioplasty" 
+          subtitle="Surgical Bone Smoothing" 
+          animation="fade"
         />
-      </SafeArea>
+      </div>
+      
+      <div style={{ transform: "scale(0.9)", transformOrigin: "top center" }}>
+        <LogicFlowPath 
+          title="Procedure Steps"
+          subtitle="Removing the impingement source"
+          steps={[
+            { 
+              id: "1", 
+              label: "Identify", 
+              description: "Locate Bone Spur", 
+              type: "start",
+              status: frame > 30 ? "completed" : "active"
+            },
+            { 
+              id: "2", 
+              label: "Action", 
+              description: "Burr Decompression", 
+              type: "process",
+              status: frame > 90 ? "completed" : (frame > 30 ? "active" : "pending")
+            },
+            { 
+              id: "3", 
+              label: "Result", 
+              description: "Flat Surface Created", 
+              type: "end",
+              status: frame > 150 ? "completed" : "pending"
+            }
+          ]}
+          connections={[
+            { from: "1", to: "2", animated: true },
+            { from: "2", to: "3", animated: true }
+          ]}
+          layout="timeline"
+        />
+      </div>
+    </AbsoluteFill>
+  );
+
+  return (
+    <AbsoluteFill style={{ backgroundColor: "#F0F8FF" }}>
+      <SplitScreen 
+        left={<SimulationView />}
+        right={<StepsView />}
+        ratio={0.55} // 左侧视觉区域稍大
+        showDivider={true}
+        dividerWidth={2}
+        leftStyle={{ borderRight: `1px solid ${theme.colors.border}` }}
+      />
+
+      <Subtitle
+        text="Next, the undersurface of the acromion is smoothed using a surgical burr to remove bone spurs."
+        startFrame={0}
+        durationInFrames={210}
+      />
     </AbsoluteFill>
   );
 }
