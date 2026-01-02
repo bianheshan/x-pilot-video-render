@@ -26,14 +26,50 @@ export const StatCircularProgress: React.FC<StatCircularProgressProps> = ({
   const frame = useCurrentFrame();
   const theme = useTheme();
   
+  // 🛡️ 防护措施1：验证必填属性
+  if (!label || typeof label !== 'string') {
+    console.error('[StatCircularProgress] label is required and must be a string');
+    return (
+      <div style={{
+        position: "absolute",
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        background: theme.colors.background,
+        color: theme.colors.error || "#ef4444",
+        fontSize: 24,
+        fontFamily: theme.fonts.body,
+        padding: 40,
+        textAlign: "center",
+      }}>
+        ⚠️ StatCircularProgress Error: Missing required prop "label"
+      </div>
+    );
+  }
+
+  // 🛡️ 防护措施2：验证 percentage 为有效数字（防止 interpolate 错误）
+  const safePercentage = (() => {
+    if (typeof percentage !== 'number' || !Number.isFinite(percentage)) {
+      console.error(`[StatCircularProgress] percentage must be a finite number, got: ${percentage}`);
+      return 0;
+    }
+    // 限制范围在 0-100
+    return Math.max(0, Math.min(100, percentage));
+  })();
+
+  // 🛡️ 防护措施3：验证 duration 为正数
+  const safeDuration = Math.max(1, duration);
+  
   // 使用主题颜色或传入的颜色
   const progressColor = color || theme.colors.primary;
 
-  // 进度动画
+  // 进度动画（使用安全的 percentage 值）
   const currentProgress = interpolate(
     frame,
-    [0, duration],
-    [0, percentage],
+    [0, safeDuration],
+    [0, safePercentage],
     {
       extrapolateRight: "clamp",
       easing: (t) => {
@@ -277,7 +313,7 @@ export const StatCircularProgress: React.FC<StatCircularProgressProps> = ({
             <span style={{ color: progressColor }}>●</span> Current: {displayValue}%
           </div>
           <div>
-            <span style={{ color: progressColor }}>●</span> Target: {percentage}%
+            <span style={{ color: progressColor }}>●</span> Target: {safePercentage}%
           </div>
         </div>
       </div>
@@ -310,7 +346,7 @@ export const StatCircularProgress: React.FC<StatCircularProgressProps> = ({
       })}
 
       {/* 完成提示 */}
-      {currentProgress >= percentage && (
+      {currentProgress >= safePercentage && (
         <div
           style={{
             position: "absolute",
@@ -318,7 +354,7 @@ export const StatCircularProgress: React.FC<StatCircularProgressProps> = ({
             fontSize: 20,
             color: progressColor,
             fontFamily: theme.fonts.mono,
-            opacity: interpolate(frame, [duration, duration + 20], [0, 1], {
+            opacity: interpolate(frame, [safeDuration, safeDuration + 20], [0, 1], {
               extrapolateRight: "clamp",
             }),
             textShadow: `0 0 10px ${progressColor}`,

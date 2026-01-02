@@ -55,7 +55,29 @@ export const ChartSankeyFlow: React.FC<ChartSankeyFlowProps> = ({
   const frame = useCurrentFrame();
   const theme = useTheme();
 
-  // 错误处理
+  // 🛡️ 防护措施1：验证 nodes 数组
+  if (!Array.isArray(nodes)) {
+    console.error('[ChartSankeyFlow] nodes must be an array, got:', typeof nodes);
+    return (
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          color: theme.colors.error || "#ef4444",
+          fontSize: 24,
+          fontFamily: theme.fonts.body,
+          padding: 40,
+          textAlign: "center",
+        }}
+      >
+        ⚠️ ChartSankeyFlow Error: "nodes" must be an array
+      </div>
+    );
+  }
+
   if (nodes.length === 0) {
     return (
       <div
@@ -75,6 +97,29 @@ export const ChartSankeyFlow: React.FC<ChartSankeyFlowProps> = ({
     );
   }
 
+  // 🛡️ 防护措施2：验证 links 数组
+  if (!Array.isArray(links)) {
+    console.error('[ChartSankeyFlow] links must be an array, got:', typeof links);
+    return (
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          color: theme.colors.error || "#ef4444",
+          fontSize: 24,
+          fontFamily: theme.fonts.body,
+          padding: 40,
+          textAlign: "center",
+        }}
+      >
+        ⚠️ ChartSankeyFlow Error: "links" must be an array
+      </div>
+    );
+  }
+
   const chartWidth = 1000;
   const chartHeight = 600;
 
@@ -83,9 +128,22 @@ export const ChartSankeyFlow: React.FC<ChartSankeyFlowProps> = ({
     // 创建节点映射
     const nodeMap = new Map(nodes.map((n, i) => [n.id, i]));
 
+    // 🛡️ 防护措施3：验证 links 中的 source/target 是否存在于 nodes 中
+    const validLinks = links.filter((l) => {
+      const hasSource = nodeMap.has(l.source);
+      const hasTarget = nodeMap.has(l.target);
+      if (!hasSource) {
+        console.warn(`[ChartSankeyFlow] Link source "${l.source}" not found in nodes`);
+      }
+      if (!hasTarget) {
+        console.warn(`[ChartSankeyFlow] Link target "${l.target}" not found in nodes`);
+      }
+      return hasSource && hasTarget;
+    });
+
     // 转换数据格式
     const d3Nodes = nodes.map((n) => ({ ...n }));
-    const d3Links = links.map((l) => ({
+    const d3Links = validLinks.map((l) => ({
       source: nodeMap.get(l.source)!,
       target: nodeMap.get(l.target)!,
       value: l.value,

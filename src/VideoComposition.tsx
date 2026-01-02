@@ -79,7 +79,7 @@ export const VideoComposition: React.FC<VideoCompositionProps> = ({
 
   return (
     <ThemeProvider themeId={manifest.theme}>
-      <AbsoluteFill style={{ backgroundColor: "#000" }}>
+      <AbsoluteFill style={{ backgroundColor: "#ffffff" }}>
         {sceneTimings.map((scene, index) => {
           const SceneComponent = loadSceneComponent(scene.component);
           return (

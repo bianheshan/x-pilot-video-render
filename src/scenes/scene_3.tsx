@@ -1,217 +1,183 @@
 import React from "react";
-import { AbsoluteFill, useCurrentFrame, interpolate, Img, spring, useVideoConfig } from "remotion";
-import { Subtitle } from "../components";
+import { AbsoluteFill, useCurrentFrame, interpolate, Sequence } from "remotion";
+import { 
+  TechBrowserMockup, 
+  LogicGanttTimeline, 
+  Subtitle,
+  ListBulletPoints
+} from "../components";
 import { useTheme } from "../contexts/ThemeContext";
 
 /**
- * Scene 3: Visualize the minimally invasive entry points.
- * Target: Know: Visualize the minimally invasive entry points.
+ * Scene 3: Communication and Scheduling Tools
+ * Target: Explain Communication and Scheduling tools (Slack/Teams vs MS Project/Smartsheet).
+ * Layout: Full Screen Immersive (Two-stage transition)
+ * Duration: 12 seconds (360 frames)
  * 
- * Content:
- * - Annotated Image: Showing Posterior, Lateral, and Anterior Portals on a shoulder image.
- * - Animation: Image gentle zoom, annotations drawing out.
- * 
- * Duration: 5.0 seconds (150 frames)
+ * Timeline:
+ * - 0-6s: Communication Tools (Slack Simulation)
+ * - 6-12s: Scheduling Tools (Gantt Chart Visualization)
  */
 export default function Scene3() {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
   const theme = useTheme();
-
-  // Configuration from JSON
-  const primaryColor = "#0077B6"; // Medical Blue
-  const secondaryColor = "#90E0EF";
-  const accentColor = "#E63946";
-  const backgroundColor = "#FFFFFF";
-
-  // Image Data
-  const imageUrl = "http://35.232.154.66:5125/files/tools/98641f92-72a5-4c60-ba03-ccf089bb4c1e.jpg?timestamp=1767338040&nonce=d466b78cf30e4b14fb2044e93444bc98&sign=1igiTI88GftH7LBv6zWO53uLvyjlLHRAu2PKZG8DRkc=";
+  const frame = useCurrentFrame();
   
-  const annotations = [
-    { x: 0.3, y: 0.4, text: "Posterior Portal", delay: 30 },
-    { x: 0.5, y: 0.5, text: "Lateral Portal", delay: 45 },
-    { x: 0.7, y: 0.4, text: "Anterior Portal", delay: 60 },
-  ];
+  // Define colors from config
+  const bgBase = "#F0F9FF"; // from JSON
+  const primaryColor = "#2563EB";
+  
+  // Transition timing (midpoint at 6s = 180 frames)
+  const transitionFrame = 180;
+  
+  // Phase 1 Animation: Enter and Exit
+  const phase1Opacity = interpolate(
+    frame,
+    [0, 30, 150, 180],
+    [0, 1, 1, 0],
+    { extrapolateRight: "clamp" }
+  );
+  
+  const phase1TranslateY = interpolate(
+    frame,
+    [0, 30, 150, 180],
+    [50, 0, 0, -50],
+    { extrapolateRight: "clamp" }
+  );
 
-  // Animation: Gentle Zoom In for the image
-  const scale = interpolate(frame, [0, 150], [1, 1.1], {
-    extrapolateRight: "clamp",
-  });
-
-  const imageOpacity = interpolate(frame, [0, 20], [0, 1], {
-    extrapolateRight: "clamp",
-  });
+  // Phase 2 Animation: Enter
+  const phase2Opacity = interpolate(
+    frame,
+    [180, 210],
+    [0, 1],
+    { extrapolateRight: "clamp" }
+  );
+  
+  const phase2Scale = interpolate(
+    frame,
+    [180, 210],
+    [0.9, 1],
+    { extrapolateRight: "clamp" }
+  );
 
   return (
-    <AbsoluteFill style={{ backgroundColor }}>
-      {/* 1. Main Image Layer */}
-      <AbsoluteFill style={{ 
-        justifyContent: 'center', 
-        alignItems: 'center',
-        overflow: 'hidden' 
-      }}>
-        <div style={{
-          width: '100%',
-          height: '100%',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          transform: `scale(${scale})`,
-          opacity: imageOpacity,
+    <AbsoluteFill style={{ background: bgBase }}>
+      
+      {/* Phase 1: Communication Simulation (0-6s) */}
+      <Sequence from={0} durationInFrames={180}>
+        <AbsoluteFill style={{ 
+          justifyContent: "center", 
+          alignItems: "center",
+          opacity: phase1Opacity,
+          transform: `translateY(${phase1TranslateY}px)`
         }}>
-          <Img 
-            src={imageUrl} 
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover', // Using cover to fill screen, assuming image is high res
-            }}
-          />
-        </div>
-      </AbsoluteFill>
-
-      {/* 2. Annotation Layer */}
-      <AbsoluteFill>
-        {annotations.map((ann, index) => {
-          // Animation calculations for each annotation
-          const dotProgress = spring({
-            frame: frame - ann.delay,
-            fps,
-            config: { damping: 12, stiffness: 100 }
-          });
-          
-          const lineProgress = interpolate(
-            frame, 
-            [ann.delay + 10, ann.delay + 30], 
-            [0, 1], 
-            { extrapolateRight: "clamp", extrapolateLeft: "clamp" }
-          );
-
-          const textOpacity = interpolate(
-            frame,
-            [ann.delay + 20, ann.delay + 40],
-            [0, 1],
-            { extrapolateRight: "clamp", extrapolateLeft: "clamp" }
-          );
-
-          // Determine label position direction based on X coordinate
-          // If on the left side (x < 0.5), label goes left. Right side, label goes right. Center, goes up.
-          const isLeft = ann.x < 0.4;
-          const isRight = ann.x > 0.6;
-          
-          // Line calculations
-          const lineLength = 100;
-          const lineAngle = isLeft ? -45 : (isRight ? 45 : -90); // Simple directional logic
-          
-          // Styles
-          const dotSize = 24;
-          
-          return (
-            <div
-              key={index}
-              style={{
-                position: 'absolute',
-                left: `${ann.x * 100}%`,
-                top: `${ann.y * 100}%`,
-                width: 0,
-                height: 0,
-                overflow: 'visible',
-              }}
-            >
-              {/* Pulsing Dot Marker */}
-              <div style={{
-                position: 'absolute',
-                left: -dotSize / 2,
-                top: -dotSize / 2,
-                width: dotSize,
-                height: dotSize,
-                borderRadius: '50%',
-                backgroundColor: accentColor,
-                border: `3px solid white`,
-                boxShadow: `0 4px 12px rgba(0,0,0,0.3)`,
-                transform: `scale(${dotProgress})`,
-                opacity: dotProgress,
-                zIndex: 10,
-              }} />
-
-              {/* Connecting Line */}
-              <div style={{
-                position: 'absolute',
-                left: 0,
-                top: 0,
-                width: 4,
-                height: lineLength * lineProgress,
-                backgroundColor: primaryColor,
-                transformOrigin: 'top center',
-                transform: `rotate(${isLeft ? 135 : (isRight ? -135 : 180)}deg)`, // Adjust rotation to point outwards
-                opacity: lineProgress,
-                zIndex: 5,
-                borderRadius: 2,
-              }} />
-
-              {/* Label Container */}
-              <div style={{
-                position: 'absolute',
-                // Calculate end of line position approximately
-                transform: `translate(${
-                  isLeft ? `-${lineLength * 0.7 + 160}px` : (isRight ? `${lineLength * 0.7}px` : `-80px`)
-                }, ${
-                  isLeft || isRight ? `${lineLength * 0.7}px` : `-${lineLength + 50}px`
-                })`,
-                opacity: textOpacity,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: isLeft ? 'flex-end' : (isRight ? 'flex-start' : 'center'),
-                width: 200,
-              }}>
-                <div style={{
-                  backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                  backdropFilter: 'blur(8px)',
-                  padding: '12px 20px',
-                  borderRadius: 12,
-                  border: `1px solid ${secondaryColor}`,
-                  boxShadow: '0 8px 32px rgba(0, 119, 182, 0.15)',
-                  textAlign: isLeft ? 'right' : (isRight ? 'left' : 'center'),
-                }}>
-                  <span style={{
-                    color: primaryColor,
-                    fontFamily: theme.fonts.heading,
-                    fontWeight: 700,
-                    fontSize: 20,
-                    display: 'block',
-                    whiteSpace: 'nowrap'
-                  }}>
-                    {ann.text}
-                  </span>
-                  <span style={{
-                    color: theme.colors.textSecondary,
-                    fontFamily: theme.fonts.body,
-                    fontSize: 14,
-                    marginTop: 4,
-                    display: 'block'
-                  }}>
-                    Entry Point
-                  </span>
+          <div style={{ width: "80%", maxWidth: 1000 }}>
+            <h2 style={{ 
+              textAlign: "center", 
+              marginBottom: 40,
+              fontSize: 48,
+              color: theme.colors.text,
+              fontFamily: theme.fonts.heading
+            }}>
+              Real-time Collaboration
+            </h2>
+            
+            <TechBrowserMockup
+              url="https://slack.com/app/project-alpha"
+              deviceType="desktop"
+              showDevTools={false}
+              content={
+                <div style={{ padding: 40, background: "white", height: "100%" }}>
+                  <div style={{ marginBottom: 20, borderBottom: "1px solid #eee", paddingBottom: 10 }}>
+                    <strong style={{ color: "#333" }}># project-updates</strong>
+                  </div>
+                  <ListBulletPoints 
+                    items={[
+                      { 
+                        title: "Project Manager", 
+                        description: "Update on the timeline? We need to ship by Friday.",
+                        icon: "👤",
+                        accentColor: primaryColor
+                      },
+                      { 
+                        title: "Developer Lead", 
+                        description: "Backend is ready. Waiting for QA sign-off.",
+                        icon: "👨‍💻",
+                        accentColor: theme.colors.success
+                      },
+                      { 
+                        title: "QA Team", 
+                        description: "Testing in progress. Found 2 minor bugs.",
+                        icon: "🔍",
+                        accentColor: theme.colors.warning
+                      }
+                    ]}
+                    style={{ gap: 20 }}
+                  />
                 </div>
+              }
+            />
+          </div>
+        </AbsoluteFill>
+      </Sequence>
+
+      {/* Phase 2: Gantt Chart Visualization (6-12s) */}
+      <Sequence from={180} durationInFrames={180}>
+        <AbsoluteFill style={{ 
+          justifyContent: "center", 
+          alignItems: "center",
+          opacity: phase2Opacity,
+          transform: `scale(${phase2Scale})`
+        }}>
+          <div style={{ width: "85%", maxWidth: 1100 }}>
+            <h2 style={{ 
+              textAlign: "center", 
+              marginBottom: 40,
+              fontSize: 48,
+              color: theme.colors.text,
+              fontFamily: theme.fonts.heading
+            }}>
+              Complex Dependency Management
+            </h2>
+            
+            <div style={{ 
+              background: "white", 
+              padding: 40, 
+              borderRadius: 20,
+              boxShadow: "0 10px 30px rgba(0,0,0,0.05)"
+            }}>
+              <LogicGanttTimeline 
+                tasks={[
+                  { id: "1", name: "Requirements", start: 0, duration: 20, color: "#3B82F6" },
+                  { id: "2", name: "Design Phase", start: 15, duration: 25, color: "#8B5CF6" },
+                  { id: "3", name: "Development", start: 35, duration: 40, color: "#10B981" },
+                  { id: "4", name: "Testing", start: 70, duration: 20, color: "#F59E0B" },
+                  { id: "5", name: "Deployment", start: 85, duration: 10, color: "#EF4444" }
+                ]}
+              />
+              <div style={{ 
+                marginTop: 20, 
+                textAlign: "center", 
+                color: theme.colors.textSecondary,
+                fontSize: 18
+              }}>
+                Visualizing Critical Path & Dependencies
               </div>
             </div>
-          );
-        })}
-      </AbsoluteFill>
+          </div>
+        </AbsoluteFill>
+      </Sequence>
 
-      {/* 3. Subtitle */}
-      <Subtitle
-        text="To treat this, arthroscopic surgery is performed through small incisions called portals."
-        startFrame={0} // Relative to scene start
+      {/* Subtitles */}
+      <Subtitle 
+        text="For communication, Slack and Microsoft Teams are essential for real-time collaboration."
+        startFrame={0}
         durationInFrames={150}
-        variant="clean"
       />
-      
-      {/* 4. Overlay Vignette for focus */}
-      <AbsoluteFill style={{
-        background: 'radial-gradient(circle at center, transparent 40%, rgba(255,255,255,0.8) 100%)',
-        pointerEvents: 'none',
-      }} />
+      <Subtitle 
+        text="But for complex timelines, you need Gantt tools like Microsoft Project or Smartsheet to visualize dependencies."
+        startFrame={150}
+        durationInFrames={210}
+      />
     </AbsoluteFill>
   );
 }

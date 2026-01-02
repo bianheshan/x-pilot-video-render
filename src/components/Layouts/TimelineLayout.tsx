@@ -47,6 +47,42 @@ export const TimelineLayout: React.FC<TimelineLayoutProps> = ({
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
+  // 🛡️ 防护措施：验证 items 是否为有效数组
+  if (!Array.isArray(items)) {
+    console.error('[TimelineLayout] items must be an array, got:', typeof items);
+    return (
+      <AbsoluteFill style={{ 
+        backgroundColor, 
+        padding,
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        color: "#ef4444",
+        fontSize: 24,
+        textAlign: "center",
+      }}>
+        ⚠️ TimelineLayout Error: "items" prop must be an array
+      </AbsoluteFill>
+    );
+  }
+
+  if (items.length === 0) {
+    console.warn('[TimelineLayout] items array is empty');
+    return (
+      <AbsoluteFill style={{ 
+        backgroundColor, 
+        padding,
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        color: "#9ca3af",
+        fontSize: 20,
+      }}>
+        Timeline: No items to display
+      </AbsoluteFill>
+    );
+  }
+
   const isVertical = orientation === "vertical";
 
   const getStartFrame = (item: TimelineItem, index: number) => {

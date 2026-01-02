@@ -1,176 +1,132 @@
 import React from "react";
 import { AbsoluteFill, useCurrentFrame, interpolate, Sequence } from "remotion";
-import { 
-  SplitScreen, 
-  ListBulletPoints, 
-  IndRobotArm, 
-  Subtitle,
-  Title3DFloating
-} from "../components";
+import { SplitScreen, CardGlassmorphism, ListBulletPoints, Subtitle } from "../components";
 import { useTheme } from "../contexts/ThemeContext";
 
 /**
- * Scene 2: Mechanism of Impingement
+ * 场景索引：1
+ * 场景 ID：scene_2
+ * 场景目标：Introduce the first major category: Task Organization.
+ * 布局方式：split-screen-horizontal
+ * 持续时间：12.5 秒 (375 帧)
  * 
- * Target: Know: Understand the mechanism of impingement.
- * Layout: SplitScreen (Visual Metaphor Left / Essential Info Right)
- * Duration: 7.5 seconds (225 frames)
- * 
- * Visual Logic:
- * - Left: Uses IndRobotArm to simulate the mechanics of arm abduction (lifting).
- * - Overlay: A red pulsating gradient represents the inflammation/pain point where the "bone" rubs the "tendon".
- * - Right: Bullet points explaining the syndrome.
+ * 组件清单：
+ * - S2_Title: info-card (CardGlassmorphism)
+ * - S2_Tools_Comparison: key-value-list (ListBulletPoints)
  */
 export default function Scene2() {
   const theme = useTheme();
   const frame = useCurrentFrame();
+  
+  // 颜色配置
+  const primaryColor = "#2563EB";
+  const secondaryColor = "#3B82F6";
+  
+  // 动画控制
+  // 1. 左侧标题入场 (0-5s -> 0-150帧): slide-in-left
+  const leftSlideX = interpolate(frame, [0, 45], [-100, 0], {
+    extrapolateRight: "clamp"
+  });
+  const leftOpacity = interpolate(frame, [0, 45], [0, 1], {
+    extrapolateRight: "clamp"
+  });
 
-  // Configuration from JSON
-  const colors = {
-    primary: "#0077B6",
-    secondary: "#90E0EF",
-    accent: "#E63946",
-    text: "#333333",
-    background: "linear-gradient(to bottom, #F0F8FF, #E0F7FA)"
-  };
-
-  // Animation: Arm lifting simulation (Abduction 0 -> 90 degrees)
-  // Moves slowly throughout the scene to show the process
-  const armLiftAngle = interpolate(
-    frame,
-    [0, 150],
-    [0, -80], // Negative to lift up in standard coordinate systems often used in 2D/3D rigs
-    { extrapolateRight: "clamp" }
-  );
-
-  // Animation: Inflammation Pulse (Simulating the "Red Glow" on contact)
-  // Starts appearing as the arm reaches a certain height (frame 45+)
-  const painOpacity = interpolate(
-    frame,
-    [45, 90, 135, 180, 225],
-    [0, 0.8, 0.4, 0.9, 0.5], // Pulsing effect
-    { extrapolateRight: "clamp" }
-  );
-
-  const painScale = interpolate(
-    frame,
-    [45, 90],
-    [0.5, 1.5],
-    { extrapolateRight: "clamp" }
-  );
+  // 2. 右侧列表入场 (5-11s -> 150-330帧): staggered-fade-in
+  // 列表整体淡入，内部项由组件自身或 Sequence 控制
+  const rightOpacity = interpolate(frame, [150, 180], [0, 1], {
+    extrapolateRight: "clamp"
+  });
+  const rightSlideY = interpolate(frame, [150, 180], [30, 0], {
+    extrapolateRight: "clamp"
+  });
 
   return (
-    <AbsoluteFill style={{ background: colors.background }}>
-      
-      {/* Main Layout */}
+    <AbsoluteFill style={{ 
+      background: "linear-gradient(to bottom, #ffffff, #e0f2fe)"
+    }}>
       <SplitScreen
-        ratio={0.55} // Give slightly more space to the visual
+        ratio={0.4}
+        gap={40}
+        showDivider={true}
+        
+        // 左侧区域：任务组织标题卡片
         left={
           <div style={{ 
-            position: "relative", 
-            width: "100%", 
-            height: "100%",
-            display: "flex",
+            height: "100%", 
+            display: "flex", 
+            flexDirection: "column", 
             justifyContent: "center",
-            alignItems: "center",
-            flexDirection: "column"
+            padding: 60,
+            opacity: leftOpacity,
+            transform: `translateX(${leftSlideX}px)`
           }}>
-            {/* Visual Metaphor: Mechanical Arm representing Skeletal Mechanics */}
-            <div style={{ width: 400, height: 400, position: "relative" }}>
-              <IndRobotArm
-                joints={[
-                  { angle: 0, length: 140 },    // 'Torso/Scapula' base
-                  { angle: armLiftAngle, length: 160 }, // 'Humerus' lifting
-                  { angle: 15, length: 80 }     // 'Forearm'
-                ]}
-                showAxes={false}
-              />
-              
-              {/* Inflammation Overlay: The "Contact Point" */}
-              <div style={{
-                position: "absolute",
-                top: "45%", // Approximate joint location
-                left: "50%",
-                width: 120,
-                height: 120,
-                borderRadius: "50%",
-                background: `radial-gradient(circle, ${colors.accent} 0%, transparent 70%)`,
-                opacity: painOpacity,
-                transform: `translate(-50%, -50%) scale(${painScale})`,
-                pointerEvents: "none",
-                mixBlendMode: "multiply"
-              }} />
-              
-              {/* Label for the visual metaphor */}
-              <div style={{
-                position: "absolute",
-                top: "45%",
-                left: "50%",
-                transform: "translate(-50%, -50%)",
-                opacity: painOpacity,
-                color: colors.accent,
-                fontWeight: "bold",
-                textShadow: "0 0 10px white"
-              }}>
-                IMPINGEMENT
-              </div>
-            </div>
-
-            <div style={{ 
-              marginTop: 20, 
-              color: colors.primary, 
-              fontFamily: theme.fonts.mono,
-              fontSize: 14,
-              opacity: 0.7 
-            }}>
-              Fig 2.1: Mechanical Abduction Simulation
-            </div>
-          </div>
-        }
-        right={
-          <div style={{ padding: 50, height: "100%", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-            <ListBulletPoints
-              title="Impingement Syndrome"
-              items={[
-                { 
-                  text: "Narrowed Subacromial Space", 
-                  description: "Reduced clearance for movement",
-                  icon: "⬇️",
-                  accentColor: colors.primary
-                },
-                { 
-                  text: "Bone Rubbing Tendon", 
-                  description: "Acromion friction against Rotator Cuff",
-                  icon: "⚠️",
-                  accentColor: colors.accent
-                },
-                { 
-                  text: "Painful Inflammation", 
-                  description: "Resulting in bursitis and tendinitis",
-                  icon: "🔥",
-                  accentColor: colors.accent 
-                }
-              ]}
-              showIndex={true}
-              highlightColor={colors.secondary}
+            <CardGlassmorphism
+              title="Task Organization"
+              content="Organize, assign, and track individual work items."
+              icon="clipboard-check"
+              accentColor={primaryColor}
+              align="center"
             />
           </div>
         }
-        animation="slide" // Slide-in animation for the split screen
-        animationDuration={30}
-        showDivider={true}
-        labelLeft="Mechanism"
-        labelRight="Pathology"
+        
+        // 右侧区域：工具对比列表
+        right={
+          <div style={{ 
+            height: "100%", 
+            display: "flex", 
+            flexDirection: "column", 
+            justifyContent: "center",
+            padding: 60,
+            opacity: rightOpacity,
+            transform: `translateY(${rightSlideY}px)`
+          }}>
+            <ListBulletPoints
+              title="Top Tools Comparison"
+              items={[
+                { 
+                  title: "Trello", 
+                  description: "Visual Kanban Boards for intuitive workflow tracking", 
+                  icon: "📊",
+                  accentColor: "#0079BF" 
+                },
+                { 
+                  title: "Asana", 
+                  description: "Multi-View Tracking (List, Board, Timeline)", 
+                  icon: "✅",
+                  accentColor: "#F06A6A"
+                },
+                { 
+                  title: "Todoist", 
+                  description: "Simple To-Do Lists for personal productivity", 
+                  icon: "📝",
+                  accentColor: "#E44332"
+                }
+              ]}
+              showIndex={false}
+              twoColumns={false}
+            />
+          </div>
+        }
       />
 
-      {/* Subtitle */}
-      <Subtitle
-        text="In impingement syndrome, the subacromial space narrows, causing the acromion to rub against the rotator cuff."
-        startFrame={10} // Slight delay to let scene settle
-        durationInFrames={215}
-        emphasisWords={["narrows", "rub", "rotator cuff"]}
-        variant="solid"
-      />
+      {/* 字幕 1: 0s - 4.5s (135帧) */}
+      <Sequence from={0} durationInFrames={135}>
+        <Subtitle
+          text="First up, Task Organization. This is about ensuring team accountability."
+          startFrame={0}
+          durationInFrames={135}
+        />
+      </Sequence>
+
+      {/* 字幕 2: 4.5s - 12.5s (240帧) */}
+      <Sequence from={135} durationInFrames={240}>
+        <Subtitle
+          text="Use Trello for visual Kanban workflows, Asana for complex projects needing multiple views, or Todoist for personal productivity."
+          startFrame={0}
+          durationInFrames={240}
+        />
+      </Sequence>
     </AbsoluteFill>
   );
 }
