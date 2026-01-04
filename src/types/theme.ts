@@ -15,6 +15,10 @@ export interface ThemeColors {
   surface: string;
   surfaceLight: string;
   shadow: string; // 新增：阴影颜色
+
+  /** 可选：字幕样式（不设置则 `Subtitle` 内部使用兜底值） */
+  subtitleBackground?: string;
+  subtitleText?: string;
 }
 
 export interface ThemeFonts {
@@ -68,6 +72,8 @@ export const PRESET_THEMES: Record<string, Theme> = {
       surface: "#1a1a2e",
       surfaceLight: "#2a2a3e",
       shadow: "#000000",
+      subtitleBackground: "rgba(0, 0, 0, 0.45)",
+      subtitleText: "#ffffff",
     },
     fonts: {
       heading: "Arial Black, sans-serif",
@@ -106,6 +112,8 @@ export const PRESET_THEMES: Record<string, Theme> = {
       surface: "#1a0a1a",
       surfaceLight: "#2a1a2a",
       shadow: "#000000",
+      subtitleBackground: "rgba(0, 0, 0, 0.45)",
+      subtitleText: "#ffffff",
     },
     fonts: {
       heading: "Arial Black, sans-serif",
@@ -220,6 +228,8 @@ export const PRESET_THEMES: Record<string, Theme> = {
       surface: "#1e272e",
       surfaceLight: "#2d3436",
       shadow: "#000000",
+      subtitleBackground: "rgba(0, 0, 0, 0.45)",
+      subtitleText: "#ffffff",
     },
     fonts: {
       heading: "Arial, sans-serif",
@@ -258,6 +268,8 @@ export const PRESET_THEMES: Record<string, Theme> = {
       surface: "#1a1a1a",
       surfaceLight: "#2a2a2a",
       shadow: "#000000",
+      subtitleBackground: "rgba(0, 0, 0, 0.45)",
+      subtitleText: "#ffffff",
     },
     fonts: {
       heading: "Arial, sans-serif",
@@ -296,6 +308,8 @@ export const PRESET_THEMES: Record<string, Theme> = {
       surface: "#10394f",
       surfaceLight: "#145374",
       shadow: "#000000",
+      subtitleBackground: "rgba(0, 0, 0, 0.45)",
+      subtitleText: "#ffffff",
     },
     fonts: {
       heading: "Arial, sans-serif",
