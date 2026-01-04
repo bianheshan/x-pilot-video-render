@@ -558,10 +558,22 @@ export default function Scene{scene_number}() {
 
   - ✅ 正确：`easing: Easing.out(Easing.cubic)`（先 `import { Easing } from "remotion"`）
   - ❌ 错误：`easing: spring(...)`（`spring()` 返回的是数值，不是函数，会直接报 `easing is not a function`）
-- 想要“弹簧 + 位移”的正确范式：
+  - ❌ 错误：`easing: Easing.out(Easing.expo)`（`Easing.expo` **不存在**，会导致 `easing is not a function`；正确写法是 `Easing.exp`）
+
+- **Remotion `Easing` 只能使用真实存在的成员**：不要“猜名字”。如果你不确定，宁可不写 `easing`（默认线性）或用 `Easing.linear`。
+  - ✅ 推荐常用：
+    - `Easing.out(Easing.cubic)`
+    - `Easing.out(Easing.quad)`
+    - `Easing.out(Easing.exp)`  // 注意是 `exp` 不是 `expo`
+    - `Easing.inOut(Easing.cubic)`
+    - `Easing.bezier(0.2, 0.9, 0.2, 1)`（需要自定义曲线时）
+
+- 想要“弹簧 + 位移”的正确范式（**永远不要把 `spring()` 放进 `easing`**）：
   - `const p = spring({ fps, frame: frame - delay, config: { damping: 12 } }); // p ∈ [0,1]`
   - `const y = interpolate(p, [0, 1], [50, 0]);`
+
 - 用 `useMemo` 缓存复杂计算（如 D3 布局/粒子初始状态）
+
 
 
 ### 3. 布局方式
@@ -639,7 +651,9 @@ let lastEnd = -1;
 3. ✅ 设置合适的背景色（避免纯黑 #000）
 4. ✅ 所有动画用 `useCurrentFrame()` 驱动
 5. ✅ `interpolate(..., { easing })` 的 `easing` 必须是函数；需要弹簧请用 `spring()` 先算进度再 `interpolate(progress, ...)`
+   - ✅ `Easing.exp` 才是正确成员（不要写 `Easing.expo`）
 6. ✅ 只导入 `Subtitle`/`SafeArea`，不导入其他自定义组件
+
 
 7. ✅ 使用模板已内置第三方库（Recharts, D3, Three.js 等），禁止输出安装命令
 8. ✅ 用 `useMemo` 缓存复杂计算
@@ -654,10 +668,12 @@ let lastEnd = -1;
 1. ❌ 不要导入 `src/components` 下的自定义组件（只允许 `Subtitle` / `SafeArea`）
 2. ❌ 不要使用 `Math.random()`（用 `random()` from remotion；3D/粒子初始化也一样）
 3. ❌ 不要写 `interpolate(..., { easing: spring(...) })`（`easing` 必须是函数）
-4. ❌ 不要使用 `setInterval`/`setTimeout`（用帧驱动）
+4. ❌ 不要使用 `Easing.expo`（Remotion 里是 `Easing.exp`；写错会报 `easing is not a function`）
+5. ❌ 不要使用 `setInterval`/`setTimeout`（用帧驱动）
 
-4. ❌ 不要使用 CSS Modules 或外部 CSS 文件
-5. ❌ 不要使用纯黑色背景（除非明确需求）
+6. ❌ 不要使用 CSS Modules 或外部 CSS 文件
+7. ❌ 不要使用纯黑色背景（除非明确需求）
+
 
 ---
 

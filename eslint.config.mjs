@@ -23,6 +23,12 @@ export default [
           property: "now",
           message: "Do not use Date.now() in scenes. Use frame-based timing instead.",
         },
+        {
+          object: "Easing",
+          property: "expo",
+          message:
+            "Invalid: Easing.expo does not exist in Remotion Easing. Use Easing.exp (e.g., Easing.out(Easing.exp)) or omit easing.",
+        },
       ],
       "no-restricted-globals": [
         "error",
@@ -58,6 +64,11 @@ export default [
             "Property[key.name='easing'] > CallExpression[callee.name='spring']",
           message:
             "Invalid: easing: spring(...). spring() returns a number, but easing must be a function. Use spring() to compute progress, then interpolate(progress, ...).",
+        },
+        {
+          selector: "Property[key.name='easing'] > Identifier[name='spring']",
+          message:
+            "Invalid: easing: spring. The spring() API is not an easing function. Use Easing.* or (t)=>... instead.",
         },
       ],
     },

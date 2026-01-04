@@ -4,48 +4,5 @@
   "width": 1920,
   "height": 1080,
   "theme": "tech",
-  "scenes": [
-    {
-      "id": "scene_1",
-      "name": "Define Marketing beyond just 'advertising' (Know)",
-      "durationInFrames": 660,
-      "component": "scene_1.tsx"
-    },
-    {
-      "id": "scene_2",
-      "name": "Explain the Marketing Mix (7 Ps) (Know)",
-      "durationInFrames": 1140,
-      "component": "scene_2.tsx"
-    },
-    {
-      "id": "scene_3",
-      "name": "Explain Target Audience & Segmentation (Do: Focus)",
-      "durationInFrames": 1050,
-      "component": "scene_3.tsx"
-    },
-    {
-      "id": "scene_4",
-      "name": "Explain the Marketing Funnel (Know)",
-      "durationInFrames": 1200,
-      "component": "scene_4.tsx"
-    },
-    {
-      "id": "scene_5",
-      "name": "Digital Marketing & Data (Do: Use tools)",
-      "durationInFrames": 1050,
-      "component": "scene_5.tsx"
-    },
-    {
-      "id": "scene_6",
-      "name": "Strategy vs Tactics (Know: The difference)",
-      "durationInFrames": 900,
-      "component": "scene_6.tsx"
-    },
-    {
-      "id": "scene_7",
-      "name": "Summary & CTA (Do: Start planning)",
-      "durationInFrames": 660,
-      "component": "scene_7.tsx"
-    }
-  ]
+  "scenes": []
 }
