@@ -37,8 +37,19 @@ __pycache__/
 venv/
 env/
 
-# Generated scenes (optional - uncomment if you don't want to track scenes)
-# src/scenes/*.tsx
-# src/scenes/manifest.json
+# Generated scenes (pushed from Dify/local manager)
+# - Keep `manifest.json` tracked as template input.
+# - Ignore generated `scene_*.tsx` so repo stays clean.
+src/scenes/scene_*.tsx
+
+# Remotion CLI debug captures / outputs
+remotion_out*.txt
+remotion_err*.txt
+scene*-*.png
+scene*-*.mp4
+
+# e2b bundles
+.e2b-template-bundle.tgz
+e2b-template-bundle.tgz
 
 build

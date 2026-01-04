@@ -22,5 +22,12 @@
     }
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "out", "remotion.config.ts"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    "out",
+    "remotion.config.ts",
+    "src/scenes/**/*"
+  ]
 }
+

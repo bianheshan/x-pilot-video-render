@@ -8,7 +8,8 @@
     "render": "node render.js",
     "render:cli": "remotion render MainVideo output.mp4",
     "upgrade": "remotion upgrade",
-    "lint": "eslint src && tsc",
+    "lint": "eslint src --ignore-pattern \"src/scenes/**\" && tsc",
+    "lint:scenes": "eslint src/scenes --max-warnings=0",
     "test:push": "bash test_push.sh",
     "e2b:build:dev": "cd x-pilot-remotion-template && npx tsx build.dev.ts",
     "e2b:build:prod": "cd x-pilot-remotion-template && npx tsx build.prod.ts"

@@ -52,6 +52,11 @@ export default [
               message:
                 "Do not import CSS files in scenes. Use inline styles or existing template styles.",
             },
+            {
+              group: ["@remotion/google-fonts/*"],
+              message:
+                "Do not import @remotion/google-fonts/* in scenes. Use theme.fonts.* (system fonts) to avoid module-name guessing and font-loading timeouts.",
+            },
           ],
         },
       ],
@@ -69,6 +74,17 @@ export default [
           selector: "Property[key.name='easing'] > Identifier[name='spring']",
           message:
             "Invalid: easing: spring. The spring() API is not an easing function. Use Easing.* or (t)=>... instead.",
+        },
+        {
+          selector: "MemberExpression[object.property.name='fonts'][property.name='data']",
+          message:
+            "Invalid: theme.fonts.data does not exist. Use theme.fonts.mono (for data/code) or theme.fonts.body.",
+        },
+        {
+          selector:
+            "JSXOpeningElement[name.name='Text'] JSXAttribute[name.name='font'] > JSXExpressionContainer > MemberExpression[object.property.name='fonts']",
+          message:
+            "Invalid: <Text font={theme.fonts.*}>. Drei/Troika Text 'font' expects a font URL/file, not a CSS font-family string. Omit 'font' or provide a real font URL.",
         },
       ],
     },

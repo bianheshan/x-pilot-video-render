@@ -45,7 +45,6 @@ class SceneErrorBoundary extends React.Component<
     if (!error) return this.props.children;
 
     // In headless render, you may prefer failing the render instead of showing placeholders.
-    // eslint-disable-next-line no-process-env
     const failFast = process.env.REMOTION_FAIL_ON_SCENE_ERROR === "1";
     if (failFast) {
       throw error;

@@ -223,8 +223,10 @@ import Typed from 'typed.js';
 import Prism from 'prismjs';
 // 注意：不要在场景里 import 外部 CSS（保持渲染环境可控）。需要高亮时，使用 Prism 生成 HTML + 内联样式，或复用项目内现有的代码展示组件。
 
-// @remotion/google-fonts - Google 字体（已安装）
-import { loadFont } from '@remotion/google-fonts/Roboto';
+// 字体：不要在 scene 里使用 @remotion/google-fonts/*。
+// 原因：字体子模块名很容易被“猜错”（例如 FredokaOne 不存在）导致 bundling 直接失败；
+// 同时 Google Fonts 可能引入 delayRender 超时风险。
+// 统一使用 theme.fonts.heading/body/mono 或系统字体栈即可。
 ```
 
 #### 🎞️ 媒体与特效
@@ -574,6 +576,35 @@ export default function Scene{scene_number}() {
 
 - 用 `useMemo` 缓存复杂计算（如 D3 布局/粒子初始状态）
 
+#### ✅ TypeScript 严格模式（生成代码必须能过 `strict`）
+> 本项目开启了 TypeScript `strict`，并且 scenes 代码经常会被本地/CI 的校验脚本扫描。
+
+- **不要写隐式 `any`**：所有函数参数、局部组件 props 都要有类型。
+  - ✅ 推荐：先定义 `type`/`interface`，再写组件：
+    - `type WeightProps = { color: string; label: string; position: [number, number, number]; scale?: number };`
+    - `const Weight: React.FC<WeightProps> = ({ color, label, position, scale = 1 }) => { ... }`
+- **不要引入未使用的变量/导入**：只 `import` 实际使用到的符号；不要为了“看起来完整”随手 import。
+- **不要为 JSX 额外 `import React from "react"`**：本项目 `jsx` 是 `react-jsx`，普通 JSX 不需要 React 默认导入。
+
+#### ✅ 主题字体 API（不要瞎猜字段名）
+- `theme.fonts` 只有 3 个字段：
+  - `theme.fonts.heading`
+  - `theme.fonts.body`
+  - `theme.fonts.mono`
+- ❌ 不要使用 `theme.fonts.data` / `theme.fonts.code` 这类“猜测字段”。
+
+#### ✅ Recharts formatter 类型兼容（避免 TS2322）
+- 当你写 `formatter`（比如 `LabelList`）时，参数类型往往是 `unknown | string | number | ...`。
+- ✅ 正确做法：用 `unknown` + `typeof` 守卫：
+  - `const fmt = (v: unknown) => (typeof v === "number" ? `${v.toFixed(1)}%` : String(v ?? ""));`
+
+#### ✅ Three.js / Drei 文本（避免运行时字体加载问题）
+- Drei 的 `<Text>` 组件的 `font` **期望的是字体文件 URL/路径**（例如 `.woff/.ttf`），不是 CSS 的 `font-family` 字符串。
+  - ❌ 错误：`<Text font={theme.fonts.heading} />`
+  - ✅ 做法：
+    - **优先**把文本放到 2D UI 层（普通 `<div>` + `fontFamily: theme.fonts.heading`）
+    - 或者 **省略** `font` 属性，让 Drei 用默认字体
+
 
 
 ### 3. 布局方式
@@ -712,7 +743,7 @@ let lastEnd = -1;
 #### Remotion 官方扩展（已内置）
 - `@remotion/captions`：字幕轨/字幕样式生成
 - `@remotion/preload`：图片/视频预加载（避免首帧闪烁）
-- `@remotion/fonts`、`@remotion/google-fonts/*`：字体加载
+- `@remotion/fonts`：字体加载（如需自定义字体，优先走模板内的稳定方案；不要在 scene 里直接 import `@remotion/google-fonts/*`）
 - `@remotion/transitions`、`@remotion/motion-blur`：转场/运动模糊
 - `@remotion/shapes`、`@remotion/paths`、`@remotion/noise`：形状/路径动画/噪声背景
 - `@remotion/gif`：GIF 渲染
