@@ -33,12 +33,25 @@ class SceneErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error) {
-    // Keep logs discoverable in Studio / render logs.
+    // Emit a single-line, machine-readable event for the E2B management platform.
+    // This is intentionally JSON so upstream can classify/aggregate and send back to Dify.
+    const payload = {
+      schemaVersion: 1,
+      kind: "scene_runtime_error",
+      sceneId: this.props.sceneId,
+      sceneName: this.props.sceneName,
+      componentPath: this.props.componentPath,
+      message: error.message,
+      stack: error.stack ?? null,
+    };
+
+    console.error(`[E2B_SCENE_RUNTIME_ERROR] ${JSON.stringify(payload)}`);
     console.error(
       `[SceneErrorBoundary] Scene crashed: ${this.props.sceneId} (${this.props.componentPath})`,
       error
     );
   }
+
 
   render() {
     const { error } = this.state;
@@ -102,37 +115,23 @@ export interface VideoCompositionProps {
   manifest: Manifest;
 }
 
-// 动态加载场景组件
-const loadSceneComponent = (componentPath: string) => {
-  try {
-    // 移除 .tsx 扩展名（如果有）
-    const cleanPath = componentPath.replace(/\.tsx?$/, "");
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const moduleExports = require(`./scenes/${cleanPath}`) as Record<string, unknown>;
-    const maybeDefault = (moduleExports as { default?: unknown }).default;
-    const maybeNamed = moduleExports[Object.keys(moduleExports)[0]];
-    return (maybeDefault ?? maybeNamed) as React.ComponentType<Record<string, unknown>>;
-  } catch (error) {
-    console.error(`Failed to load scene component: ${componentPath}`, error);
-    // 返回错误占位组件
-    return () => (
-      <AbsoluteFill
-        style={{
-          backgroundColor: "#1a1a1a",
-          justifyContent: "center",
-          alignItems: "center",
-          color: "white",
-          fontFamily: "sans-serif",
-        }}
-      >
-        <div style={{ textAlign: "center" }}>
-          <h1 style={{ fontSize: 48, marginBottom: 20 }}>⚠️ Scene Load Error</h1>
-          <p style={{ fontSize: 24 }}>Component: {componentPath}</p>
-        </div>
-      </AbsoluteFill>
-    );
-  }
+// 场景注册表（由 predev 脚本生成）：避免 webpack 通过“动态路径 require”把整个 `src/scenes` 目录打包进来。
+// 否则只要有一个 scene TSX 语法坏了，就会导致 Studio 启动直接失败。
+const getSceneComponentFromRegistry = (componentPath: string) => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { getSceneComponent } = require("./scene-registry.generated") as {
+    getSceneComponent: (
+      componentPath: string
+    ) => {
+      Component: React.ComponentType<Record<string, unknown>>;
+      issue?: { code: string; detail: string };
+    };
+  };
+
+  return getSceneComponent(componentPath);
 };
+
+
 
 export const VideoComposition: React.FC<VideoCompositionProps> = ({
   manifest,
@@ -176,7 +175,26 @@ export const VideoComposition: React.FC<VideoCompositionProps> = ({
     <ThemeProvider themeId={manifest.theme}>
       <AbsoluteFill style={{ backgroundColor: "#ffffff" }}>
         {sceneTimings.map((scene) => {
-          const SceneComponent = loadSceneComponent(scene.component);
+          const { Component: SceneComponent, issue } = getSceneComponentFromRegistry(
+            scene.component
+          );
+
+          if (issue) {
+            const payload = {
+              schemaVersion: 1,
+              kind: "scene_load_issue",
+              sceneId: scene.id,
+              sceneName: scene.name,
+              componentPath: scene.component,
+              issue,
+            };
+            console.warn(`[E2B_SCENE_LOAD_ISSUE] ${JSON.stringify(payload)}`);
+            console.warn(
+              `[SceneRegistry] Using placeholder for ${scene.id} (${scene.component}): ${issue.code}: ${issue.detail}`
+            );
+          }
+
+
           return (
             <Sequence
               key={scene.id}

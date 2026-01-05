@@ -30,6 +30,11 @@ export default [
           message: "Do not use Date.now() in scenes. Use frame-based timing instead.",
         },
         {
+          object: "performance",
+          property: "now",
+          message: "Do not use performance.now() in scenes. Use frame-based timing instead.",
+        },
+        {
           object: "Easing",
           property: "expo",
           message:
@@ -45,6 +50,16 @@ export default [
         {
           name: "setInterval",
           message: "Do not use setInterval() in scenes. Use frame-based timing instead.",
+        },
+        {
+          name: "requestAnimationFrame",
+          message:
+            "Do not use requestAnimationFrame() in scenes. Use frame-based timing (useCurrentFrame/interpolate/spring) instead.",
+        },
+        {
+          name: "cancelAnimationFrame",
+          message:
+            "Do not use cancelAnimationFrame() in scenes. Use frame-based timing (useCurrentFrame/interpolate/spring) instead.",
         },
       ],
 
@@ -91,6 +106,18 @@ export default [
             "JSXOpeningElement[name.name='Text'] JSXAttribute[name.name='font'] > JSXExpressionContainer > MemberExpression[object.property.name='fonts']",
           message:
             "Invalid: <Text font={theme.fonts.*}>. Drei/Troika Text 'font' expects a font URL/file, not a CSS font-family string. Omit 'font' or provide a real font URL.",
+        },
+        {
+          selector:
+            "JSXAttribute[name.name='style'] JSXExpressionContainer > ObjectExpression > Property[key.name='transition']",
+          message:
+            "Do not use CSS transition in scenes. It is not frame-driven and can cause flickering. Use interpolate/spring + frame instead.",
+        },
+        {
+          selector:
+            "JSXAttribute[name.name='style'] JSXExpressionContainer > ObjectExpression > Property[key.name='animation']",
+          message:
+            "Do not use CSS animation in scenes. It is not frame-driven and can cause flickering. Use interpolate/spring + frame instead.",
         },
       ],
     },

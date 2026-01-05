@@ -42,11 +42,19 @@ env/
 # - Ignore generated scene TSX files so repo stays clean.
 src/scenes/*.tsx
 
+# Generated scene registry (built from manifest + local scenes)
+src/scene-registry.generated.tsx
+
+
 # Remotion CLI debug captures / outputs
 remotion_*.txt
 scene*-*.png
 scene*-*.mp4
 tmp_*.png
+
+# Scene preflight report (machine-readable)
+out/scene-preflight-report.json
+
 
 # e2b bundles
 .e2b-template-bundle.tgz

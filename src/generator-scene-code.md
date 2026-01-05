@@ -576,8 +576,24 @@ export default function Scene{scene_number}() {
 
 - 用 `useMemo` 缓存复杂计算（如 D3 布局/粒子初始状态）
 
+#### ✅ 语法有效性（必须）
+> 生成的 `.tsx` **必须是可解析的 TSX**。一旦出现语法错误（例如变量名里有空格），Remotion Studio/打包会直接启动失败或构建失败。
+
+- **变量/函数/类型名必须是合法 JS 标识符**：只能用字母/数字/`_`/`$`，且不能包含空格。
+  - ❌ 错误：`const left removalY = ...`
+  - ✅ 正确：`const leftRemovalY = ...`
+- **命名规则**：统一用 `camelCase`（变量/函数）与 `PascalCase`（组件）。不要“拼接字符串”生成变量名。
+- **不要输出未闭合的括号/引号/JSX 标签**；不要留残缺的 `,` / `}` / `)`。
+
+#### ✅ 纯帧驱动动画（避免 flicker）
+> Remotion 渲染必须是确定性的：同一帧渲染多次结果必须一致。
+
+- **禁止使用 CSS `transition` / `animation`** 来做动效（这类动效不是 `useCurrentFrame()` 驱动，容易触发 flicker 警告）。
+  - ✅ 用 `frame` + `interpolate/spring` 计算 `opacity/transform` 等样式值。
+
 #### ✅ TypeScript 严格模式（生成代码必须能过 `strict`）
 > 本项目开启了 TypeScript `strict`，并且 scenes 代码经常会被本地/CI 的校验脚本扫描。
+
 
 - **不要写隐式 `any`**：所有函数参数、局部组件 props 都要有类型。
   - ✅ 推荐：先定义 `type`/`interface`，再写组件：
