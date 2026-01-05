@@ -1,0 +1,11 @@
+---
+description: Ignore AI-generated scene TSX in repo; enforce predev scene checks.
+alwaysApply: false
+enabled: true
+updatedAt: 2026-01-05T04:32:18.120Z
+provider: 
+---
+
+- Keep `src/scenes/*.tsx` out of git; `manifest.json` stays tracked.
+- Run `npm run lint:scenes` before `npm run dev` (via `predev`).
+- `lint:scenes` must include a lightweight `tsc` pass to catch missing named exports (e.g., wrong `lucide-react` icon names).

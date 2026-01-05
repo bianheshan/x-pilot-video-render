@@ -10,6 +10,12 @@ export default [
   {
     files: ["src/scenes/**/*.{ts,tsx}", "src/scenes/**/*.md"],
     rules: {
+      // Most scenes are AI-generated. We keep the checks focused on determinism and API misuse.
+      // Avoid noisy style rules that would cause frequent false positives.
+      "@typescript-eslint/no-unused-vars": "off",
+      "@typescript-eslint/no-explicit-any": "off",
+      "react-hooks/exhaustive-deps": "off",
+
       // Determinism: prevent non-reproducible renders.
       "no-restricted-properties": [
         "error",

@@ -39,14 +39,14 @@ env/
 
 # Generated scenes (pushed from Dify/local manager)
 # - Keep `manifest.json` tracked as template input.
-# - Ignore generated `scene_*.tsx` so repo stays clean.
-src/scenes/scene_*.tsx
+# - Ignore generated scene TSX files so repo stays clean.
+src/scenes/*.tsx
 
 # Remotion CLI debug captures / outputs
-remotion_out*.txt
-remotion_err*.txt
+remotion_*.txt
 scene*-*.png
 scene*-*.mp4
+tmp_*.png
 
 # e2b bundles
 .e2b-template-bundle.tgz

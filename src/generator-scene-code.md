@@ -598,6 +598,15 @@ export default function Scene{scene_number}() {
 - ✅ 正确做法：用 `unknown` + `typeof` 守卫：
   - `const fmt = (v: unknown) => (typeof v === "number" ? `${v.toFixed(1)}%` : String(v ?? ""));`
 
+#### ✅ 图标/组件导入（避免 “Element type is invalid: got undefined”）
+这是生成场景最常见的运行时报错之一：**导入了不存在的命名导出**（例如图标名、组件名“猜错”），编译可能不报错，但运行时 JSX 渲染会得到 `undefined`。
+
+- ❌ 禁止：从第三方库“猜”一个导出名再用 JSX 渲染：
+  - `import { PlaneDeparture } from "lucide-react";`（很容易不存在）
+- ✅ 推荐：
+  - **优先不用图标**，用简单形状（`div`/SVG/`@remotion/shapes`）表达即可。
+  - 如果一定要用图标：只用模板里明确列出的常用 icon 名称（不要发明新名字）；拿不准就不要用。
+
 #### ✅ Three.js / Drei 文本（避免运行时字体加载问题）
 - Drei 的 `<Text>` 组件的 `font` **期望的是字体文件 URL/路径**（例如 `.woff/.ttf`），不是 CSS 的 `font-family` 字符串。
   - ❌ 错误：`<Text font={theme.fonts.heading} />`
