@@ -322,12 +322,18 @@ ${cases
   .join("\n")}
 
     default: {
-      const detail = "Unregistered scene component: " + componentPath;
+      const detail =
+        "Unregistered scene component: " +
+        componentPath +
+        "\\n\\nHint: scene registry may be stale. After pushing new scenes/manifest, run 'npm run refresh:scenes' (or 'node scripts/scene-preflight.mjs') to regenerate 'scene-registry.generated.tsx'.";
+
+
       return {
         Component: makePlaceholder("Scene Not Registered", detail),
         issue: { code: "${IssueCode.SCENE_NOT_REGISTERED}", detail },
       };
     }
+
   }
 };
 `;

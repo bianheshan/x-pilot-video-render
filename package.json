@@ -3,10 +3,12 @@
   "version": "1.0.0",
   "description": "Remotion template for AI-generated educational videos",
   "scripts": {
-    "dev": "remotion studio",
-    "build": "remotion bundle",
+    "dev": "node scripts/scene-preflight.mjs && remotion studio",
+    "build": "node scripts/scene-preflight.mjs && remotion bundle",
     "render": "node render.js",
-    "render:cli": "remotion render MainVideo output.mp4",
+    "render:cli": "node scripts/scene-preflight.mjs && remotion render MainVideo output.mp4",
+    "refresh:scenes": "node scripts/scene-preflight.mjs",
+
     "upgrade": "remotion upgrade",
     "predev": "node scripts/scene-preflight.mjs",
     "prebuild": "node scripts/scene-preflight.mjs",
