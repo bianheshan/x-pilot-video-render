@@ -4,5 +4,36 @@
   "width": 1920,
   "height": 1080,
   "theme": "tech",
-  "scenes": []
+  "scenes": [
+    {
+      "id": "scene_1",
+      "name": "Define SAR and introduce the concept of Polarimetry (PolSAR) as an upgrade from monochrome to color.",
+      "durationInFrames": 551,
+      "component": "scene_1.tsx"
+    },
+    {
+      "id": "scene_2",
+      "name": "Explain the physics of EM waves (H/V planes) and the Scattering Matrix.",
+      "durationInFrames": 488,
+      "component": "scene_2.tsx"
+    },
+    {
+      "id": "scene_3",
+      "name": "Visualize the three main scattering mechanisms: Surface, Volume, and Double Bounce.",
+      "durationInFrames": 438,
+      "component": "scene_3.tsx"
+    },
+    {
+      "id": "scene_4",
+      "name": "Explain Pauli Decomposition and color mapping.",
+      "durationInFrames": 386,
+      "component": "scene_4.tsx"
+    },
+    {
+      "id": "scene_5",
+      "name": "Conclusion: Mention key missions and real-world value.",
+      "durationInFrames": 263,
+      "component": "scene_5.tsx"
+    }
+  ]
 }

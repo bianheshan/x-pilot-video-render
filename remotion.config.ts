@@ -30,11 +30,40 @@ Config.overrideWebpackConfig((currentConfiguration) => {
     new webpack.NormalModuleReplacementPlugin(
       /^@remotion\/google-fonts\/.*$/,
       path.resolve(process.cwd(), "src/utils/google-fonts-fallback.ts")
+    ),
+    // Force all `import ... from "remotion"` to use our safe shim.
+    // (In some Remotion v4 bundling paths, `resolve.alias` alone may not be enough.)
+    new webpack.NormalModuleReplacementPlugin(
+      /^remotion$/,
+      path.resolve(process.cwd(), "src/utils/remotion-safe.tsx")
     )
   );
+
+  const resolve = currentConfiguration.resolve ?? {};
+  const alias = {
+    ...(resolve.alias ?? {}),
+
+    // -------------------------------------------------------------------------
+    // Robustness: prevent <Img> from cancelling the whole render when an image
+    // cannot be fetched (common in E2B due to mixed-content, hotlink blocks, or
+    // network egress differences).
+    //
+    // We alias `remotion` to a shim that re-exports everything but implements a
+    // safe `Img` that does not call `cancelRender()`.
+    // -------------------------------------------------------------------------
+    "remotion$": path.resolve(process.cwd(), "src/utils/remotion-safe.tsx"),
+    "remotion-original$": path.resolve(
+      process.cwd(),
+      "node_modules/remotion/dist/esm/index.mjs"
+    ),
+  };
 
   return {
     ...currentConfiguration,
     plugins,
+    resolve: {
+      ...resolve,
+      alias,
+    },
   };
 });
