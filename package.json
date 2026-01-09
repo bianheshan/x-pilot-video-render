@@ -9,6 +9,9 @@
     "render:cli": "node scripts/scene-preflight.mjs && remotion render MainVideo output.mp4",
     "refresh:scenes": "node scripts/scene-preflight.mjs",
 
+    "bundle:api": "node scripts/bundle-worker.mjs",
+    "render:api": "node scripts/render-worker.mjs",
+
     "upgrade": "remotion upgrade",
     "predev": "node scripts/scene-preflight.mjs",
     "prebuild": "node scripts/scene-preflight.mjs",
@@ -29,6 +32,7 @@
     "@react-three/cannon": "^6.6.0",
     "@react-three/drei": "^9.122.0",
     "@react-three/fiber": "^9.4.2",
+    "@remotion/bundler": "^4.0.399",
     "@remotion/captions": "^4.0.399",
     "@remotion/cli": "^4.0.399",
     "@remotion/fonts": "^4.0.399",
@@ -42,6 +46,7 @@
     "@remotion/paths": "^4.0.399",
     "@remotion/player": "^4.0.399",
     "@remotion/preload": "^4.0.399",
+    "@remotion/renderer": "^4.0.399",
     "@remotion/shapes": "^4.0.399",
     "@remotion/skia": "^4.0.399",
     "@remotion/three": "^4.0.399",
@@ -75,9 +80,7 @@
     "vis-network": "^10.0.2"
   },
   "devDependencies": {
-    "@remotion/bundler": "^4.0.399",
     "@remotion/eslint-config-flat": "^4.0.399",
-    "@remotion/renderer": "^4.0.399",
     "@types/d3-cloud": "^1.2.9",
     "@types/d3-sankey": "^0.12.5",
     "@types/node": "^20.19.26",
